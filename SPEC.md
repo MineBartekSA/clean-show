@@ -19,7 +19,8 @@
     - [1.3.4. PATCH /api/account/:id](#134-patch-apiaccountid)
     - [1.3.5. GET /api/account/:id/orders](#135-get-apiaccountidorders)
     - [1.3.6. POST /api/account/:id/password](#136-post-apiaccountidpassword)
-    - [1.3.7. DELETE /api/account/:id](#137-delete-apiaccountid)
+    - [1.3.7. GET /api/account/:id/logout](#137-get-apiaccountidlogout)
+    - [1.3.8. DELETE /api/account/:id](#138-delete-apiaccountid)
 - [2. Models](#2-models)
   - [2.1. Product](#21-product)
     - [2.1.1. ProductStatus](#211-productstatus)
@@ -306,7 +307,22 @@ Returns:
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Account with given ID does not exists
 
-### 1.3.7. DELETE /api/account/:id
+### 1.3.7. GET /api/account/:id/logout
+
+Logout request. Invalidate the current session token
+
+> **Warning**
+> Requires Authorization.
+
+> **Note**
+> This endpoint, on success, will create an audit entry
+
+Returns:
+- `203 No Content` - Successfully logged out
+- `401 Unauthorized` - No `Authorization` header or it has invalid data
+- `404 Not Found` - Account with given ID does not exists
+
+### 1.3.8. DELETE /api/account/:id
 
 Remove account with the given id
 
@@ -368,7 +384,7 @@ ProductStatus is an enum with the following values:
 | Status          | [OrderStatus](#221-orderstatus) | Order status. Created, paid, in realisation, shipped, completed, canceled
 | OrderBy         | uint                | ID of the account who created this order
 | ShippingAddress | string              | Shipping address
-| InvoceAddress   | string              | Invoice addresss. If empty, use shipping address
+| InvoiceAddress  | string              | Invoice addresss. If empty, use shipping address
 | Products        | array([ProductOrder](#222-productorder)) | List of ordered products with the amount and price per piece. Can be represented and stored as a semicolon separated string
 | ShippingPrice   | float               | Postage and handling costs
 | Total           | float               | Grand total for the order
