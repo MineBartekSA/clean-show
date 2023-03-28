@@ -21,7 +21,7 @@ func (c *productController) Register(router domain.Router) {
 	Log.Infow("added product routes")
 }
 
-func (c *productController) GetByID(context domain.Context, _ domain.Session) {
+func (c *productController) GetByID(context domain.Context, _ domain.UserSession) {
 	//
 	context.Status(http.StatusNotImplemented)
 }

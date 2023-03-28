@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Handler func(context Context, session Session)
+type Handler func(context Context, session UserSession)
 
 type Router interface {
 	Run()

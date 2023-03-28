@@ -9,6 +9,6 @@ type session struct {
 	//
 }
 
-func NewSession(c *gin.Context) domain.Session {
+func NewSession(c *gin.Context) domain.UserSession {
 	return &session{}
 }

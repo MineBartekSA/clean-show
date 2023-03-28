@@ -47,7 +47,7 @@ func (r *router) Run() {
 	}()
 }
 
-func (r *router) API() *gin.RouterGroup {
+func (r *router) API() *gin.RouterGroup { // TODO: Abstract
 	return r.api
 }
 
