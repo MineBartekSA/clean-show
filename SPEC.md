@@ -433,8 +433,8 @@ AccountType is an enum with the following values:
 
 | Name  | Value
 |-------|-------
-| Staff | 1
-| User  | 2
+| User  | 1
+| Staff | 2
 
 ## 2.4. Session
 
@@ -480,5 +480,6 @@ ResourceType is an enum with the following values:
 | AccountPassword | 4
 | Session         | 5
 
-> **Note**
-> `AccountPassword` type is used to differenciate account information modification from password chnage
+> **Note** \
+> `AccountPassword` type is used to differenciate account information modification from password chnage \
+> `Session` type modification is used to log session token usage
