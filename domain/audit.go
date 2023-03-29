@@ -26,12 +26,20 @@ const (
 	ResourceTypeSession
 )
 
+type AuditResource interface {
+	Creation(executor uint, res_id uint) error
+	Modification(executor uint, res_id uint) error
+	Deletion(executor uint, res_id uint) error
+}
+
 type AuditUsecase interface {
 	Create(entry_type EntryType, resource_type ResourceType, resource_id uint, executor uint) error
 
 	Creation(executor uint, res_type ResourceType, res_id uint) error
 	Modification(executor uint, res_type ResourceType, res_id uint) error
 	Deletion(executor uint, res_type ResourceType, res_id uint) error
+
+	Resource(resource_type ResourceType) AuditResource
 }
 
 type AuditRepository interface {

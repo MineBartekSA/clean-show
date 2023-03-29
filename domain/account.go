@@ -13,8 +13,19 @@ type Account struct {
 type AccountType int
 
 const (
-	AccountTypeStaff AccountType = iota + 1
+	AccountTypeUnknown AccountType = iota
+	AccountTypeStaff
 	AccountTypeUser
 )
 
-// TODO: Implement interfaces
+type AccountController interface {
+	// TODO: Implement
+}
+
+type AccountUsecase interface {
+	FetchBySession(session *Session) (*Account, error)
+}
+
+type AccountRepository interface {
+	SelectID(id uint) (*Account, error)
+}

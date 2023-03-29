@@ -3,13 +3,14 @@ package domain
 import (
 	"database/sql"
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"log"
 	"reflect"
 	"strings"
 	"time"
 )
+
+type H map[string]interface{}
 
 type DBModel struct {
 	ID        uint         `db:"id"`
@@ -19,8 +20,8 @@ type DBModel struct {
 }
 
 type Stmt interface {
-	Exec(args ...any) (sql.Result, error)
-	Select(dst interface{}, args ...interface{}) error
+	Exec(args interface{}) (sql.Result, error)
+	Select(dst interface{}, args interface{}) error
 }
 
 type Tx interface {
@@ -28,7 +29,15 @@ type Tx interface {
 }
 
 type DB interface {
+	PrepareStruct(arg any) any
+
 	Prepare(query string) (Stmt, error)
+	PrepareInsertStruct(table string, arg any) (Stmt, error)
+	PrepareSelect(table, where string) (Stmt, error)
+	PrepareUpdate(table, set, where string) (Stmt, error)
+	PrepareUpdateStruct(table string, arg any, where string) (Stmt, error)
+	PrepareSoftDelete(table, where string) (Stmt, error)
+
 	Exec(query string, args ...any) (sql.Result, error)
 	Select(dst interface{}, query string, args ...interface{}) error
 
@@ -67,7 +76,7 @@ func (a *DBArray[T]) Scan(val any) error {
 	case string:
 		split = strings.Split(v, ";")
 	default:
-		return errors.New(fmt.Sprintf("Unsupported type: %T", v))
+		return fmt.Errorf("unsupported type: %T", v)
 	}
 	for _, val := range split {
 		*a = append(*a, fromString[T](val))

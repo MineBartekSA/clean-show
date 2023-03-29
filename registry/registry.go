@@ -3,7 +3,10 @@ package registry
 import (
 	"github.com/minebarteksa/clean-show/domain"
 	"github.com/minebarteksa/clean-show/infrastructure/router"
+	"github.com/minebarteksa/clean-show/usecase/account"
+	"github.com/minebarteksa/clean-show/usecase/audit"
 	"github.com/minebarteksa/clean-show/usecase/product"
+	"github.com/minebarteksa/clean-show/usecase/session"
 	"go.uber.org/fx"
 )
 
@@ -27,6 +30,12 @@ func (r *registry) Start() {
 			fx.Annotate(r.db, fx.As(new(domain.DB))),
 		),
 		fx.Provide(
+			fx.Annotate(audit.NewAuditRepository, fx.As(new(domain.AuditRepository))),
+			fx.Annotate(audit.NewAuditUsecase, fx.As(new(domain.AuditUsecase))),
+			fx.Annotate(session.NewSessionRepository, fx.As(new(domain.SessionRepository))),
+			fx.Annotate(session.NewSessionUsecase, fx.As(new(domain.SessionUsecase))),
+			fx.Annotate(account.NewAccountRepository, fx.As(new(domain.AccountRepository))),
+			fx.Annotate(account.NewAccountUsecase, fx.As(new(domain.AccountUsecase))),
 			fx.Annotate(router.NewRouter, fx.As(new(domain.Router))),
 			fx.Annotate(product.NewProductRepository, fx.As(new(domain.ProductRepository))),
 			fx.Annotate(product.NewProductUsecase, fx.As(new(domain.ProductUsecase))),

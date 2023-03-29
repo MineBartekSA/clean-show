@@ -1,15 +1,19 @@
 package domain
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
 type Handler func(context Context, session UserSession)
 
 type Router interface {
 	Run()
-	API() *gin.RouterGroup
-	EndpointHandler(handler Handler, authorized bool) func(*gin.Context)
+	API() RouteGroup
+	Auth(token string) (*Session, *Account, error)
+}
+
+type RouteGroup interface {
+	Group(relativeRath string) RouteGroup
+	GET(relativePath string, handlers Handler, authorized AccountType)
+	POST(relativePath string, handlers Handler, authorized AccountType)
+	PATCH(relativePath string, handlers Handler, authorized AccountType)
+	DELETE(relativePath string, handlers Handler, authorized AccountType)
 }
 
 type Controller interface {
