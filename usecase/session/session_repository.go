@@ -1,6 +1,8 @@
 package session
 
 import (
+	"time"
+
 	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
 	. "github.com/minebarteksa/clean-show/logger"
@@ -16,7 +18,7 @@ type sessionRespository struct {
 }
 
 func NewSessionRepository(db domain.DB) domain.SessionRepository {
-	tokenSelect, err := db.PrepareSelect("sessions", "token = :token")
+	tokenSelect, err := db.PrepareSelect("sessions", "token = :token AND updated_at > "+domain.DBInterval(domain.DBNow(), time.Minute*30))
 	if err != nil {
 		Log.Panicw("failed to prepare a named select statement", "err", err)
 	}

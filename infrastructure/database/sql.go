@@ -30,7 +30,7 @@ func NewSqlDB() domain.DB {
 		Log.Fatalw("failed to ping databse", "err", err)
 	}
 
-	db.MustExec(createTable("ausit_log", `
+	db.MustExec(createTable("audit_log", `
 		type INT NOT NULL,
 		resource_type INT NOT NULL,
 		resource_id INT NOT NULL,
@@ -41,7 +41,19 @@ func NewSqlDB() domain.DB {
 		token TEXT NOT NULL
 	`))
 	db.MustExec(createTable("accounts", `
-		
+		type INT NOT NULL,
+		email TEXT NOT NULL,
+		hash TEXT NOT NULL,
+		salt TEXT NOT NULL,
+		name TEXT NOT NULL,
+		surname TEXT NOT NULL
+	`))
+	db.MustExec(createTable("products", `
+		status INT NOT NULL,
+		name TEXT NOT NULL,
+		description TEXT NOT NULL,
+		price REAL NOT NULL,
+		images TEXT NOT NULL
 	`))
 
 	return &sqldb{db}
@@ -83,7 +95,7 @@ func (db *sqldb) PrepareSelect(table string, where string) (domain.Stmt, error) 
 	if where != "" {
 		where += " AND "
 	}
-	where += "delted_at IS NULL"
+	where += "deleted_at IS NULL"
 	sql := fmt.Sprintf("SELECT * FROM %s WHERE %s", table, where)
 	return db.Prepare(sql)
 }
@@ -101,28 +113,18 @@ func (db *sqldb) PrepareUpdate(table, set, where string) (domain.Stmt, error) {
 	if set != "" {
 		set += ", "
 	}
-	set += "updated_at = NOW()"
+	set += "updated_at = " + domain.DBNow()
 	sql := fmt.Sprintf("UPDATE %s SET %s WHERE %s", table, set, where)
 	return db.Prepare(sql)
 }
 
 func (db *sqldb) PrepareSoftDelete(table string, where string) (domain.Stmt, error) {
-	sql := fmt.Sprintf("UPDATE %s SET deleted_at = NOW() WHERE %s", table, where)
+	sql := fmt.Sprintf("UPDATE %s SET deleted_at = %s WHERE %s", table, domain.DBNow(), where)
 	return db.Prepare(sql)
 }
 
 func (db *sqldb) Prepare(query string) (domain.Stmt, error) {
-	// if config.Env.DBDriver == "postgres" || config.Env.DBDriver == "sqlite3" { // TODO: Maybe remove. I'm using named statements which seams to work on every DB
-	// 	index := 1
-	// 	for i := 0; i < len(query); i += 1 {
-	// 		if query[i] == '?' {
-	// 			placeholder := fmt.Sprintf("$%d", index)
-	// 			query = query[:i] + placeholder + query[i+len(placeholder):]
-	// 			i += len(placeholder)
-	// 			index += 1
-	// 		}
-	// 	}
-	// }
+	Log.Debugf("Preparing: '%s'", query)
 	return db.PrepareNamed(query)
 }
 

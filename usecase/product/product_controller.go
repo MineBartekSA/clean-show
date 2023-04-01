@@ -1,32 +1,57 @@
 package product
 
 import (
-	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/minebarteksa/clean-show/domain"
-	. "github.com/minebarteksa/clean-show/logger"
 )
 
 type productController struct {
 	usecase domain.ProductUsecase
-	audit   domain.AuditUsecase
 }
 
-func NewProductController(usecase domain.ProductUsecase, audit domain.AuditUsecase) domain.ProductController {
-	return &productController{usecase, audit}
+func NewProductController(usecase domain.ProductUsecase) domain.ProductController {
+	return &productController{usecase}
 }
 
-func (c *productController) Register(router domain.Router) {
+func (pc *productController) Register(router domain.Router) {
 	p := router.API().Group("/product")
-	p.GET("/:id", c.GetByID, false)
-	Log.Infow("added product routes")
+	p.POST("/", pc.CreateNew, domain.AuthLevelStaff)
+	p.GET("/:id", pc.GetByID, domain.AuthLevelNone)
 }
 
-func (c *productController) GetByID(context domain.Context, _ domain.UserSession) {
-	err := c.audit.Creation(0, domain.ResourceTypeOrder, 0)
+func (pc *productController) CreateNew(context domain.Context, session domain.UserSession) {
+	var product domain.Product
+	err := context.UnmarshalBody(&product)
 	if err != nil {
-		log.Panicln(err)
+		context.Status(http.StatusBadRequest) // TODO: Better error
+		return
 	}
-	context.Status(http.StatusOK)
+	err = pc.usecase.Create(session.GetAccount().ID, &product)
+	if err != nil {
+		context.Status(http.StatusInternalServerError) // TODO: Better error
+		return
+	}
+	context.JSON(http.StatusOK,
+		struct {
+			ID uint `json:"id"`
+			*domain.Product
+		}{product.ID, &product},
+	)
+}
+
+func (pc *productController) GetByID(context domain.Context, _ domain.UserSession) {
+	rawId := context.Param("id")
+	id, err := strconv.ParseUint(rawId, 10, 64)
+	if err != nil {
+		context.Status(http.StatusNotFound) // TODO: Better error
+		return
+	}
+	product, err := pc.usecase.FetchByID(uint(id))
+	if err != nil {
+		context.Status(http.StatusNotFound) // TODO: Better error
+		return
+	}
+	context.JSON(http.StatusOK, product)
 }

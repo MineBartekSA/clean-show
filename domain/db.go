@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/minebarteksa/clean-show/config"
 )
 
 type H map[string]interface{}
@@ -104,4 +106,59 @@ func (a DBArray[any]) Value() (driver.Value, error) {
 		tmp = append(tmp, fmt.Sprint(val))
 	}
 	return strings.Join(tmp, ";"), nil
+}
+
+func DBNow() string {
+	if config.Env.DBDriver == "sqlite3" {
+		return "datetime('now', 'localhost')"
+	}
+	return "NOW()"
+}
+
+func DBInterval(base string, durations ...time.Duration) string {
+	var durs []string
+	for _, duration := range durations {
+		hours := int(duration.Hours())
+		if hours != 0 {
+			durs = append(durs, fmt.Sprintf("%d HOUR", hours))
+		}
+		minutes := int(duration.Minutes()) % 60
+		if minutes != 0 {
+			durs = append(durs, fmt.Sprintf("%d MINUTE", minutes))
+		}
+		seconds := int(duration.Seconds()) % 60
+		if seconds != 0 {
+			durs = append(durs, fmt.Sprintf("%d SECOND", seconds))
+		}
+	}
+	if config.Env.DBDriver == "sqlite3" {
+		return sqlite3(base, durs)
+	} else if config.Env.DBDriver == "postgres" {
+		return postgres(base, durs)
+	}
+	return mysql(base, durs)
+}
+
+func sqlite3(base string, durations []string) string {
+	interval := "datetime(" + base + ", "
+	for _, dur := range durations {
+		interval += "'" + dur + "', "
+	}
+	return interval[:len(interval)-2] + ")"
+}
+
+func postgres(base string, durations []string) string {
+	interval := base
+	for _, dur := range durations {
+		interval += " + INTERVAL '" + dur + "'"
+	}
+	return interval
+}
+
+func mysql(base string, durations []string) string {
+	interval := base
+	for _, dur := range durations {
+		interval += " + INTERVAL " + dur
+	}
+	return interval
 }

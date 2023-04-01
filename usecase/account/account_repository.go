@@ -14,7 +14,7 @@ type accountRepository struct {
 func NewAccountRepository(db domain.DB) domain.AccountRepository {
 	selectID, err := db.PrepareSelect("accounts", "id = :id")
 	if err != nil {
-		Log.Panicw("failed to prepare a named insert statement from a structure", "err", err)
+		Log.Panicw("failed to prepare a named select statement", "err", err)
 	}
 	return &accountRepository{db, selectID}
 }

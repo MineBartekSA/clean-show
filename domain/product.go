@@ -1,7 +1,7 @@
 package domain
 
 type Product struct {
-	DBModel
+	DBModel     `json:"-"`
 	Status      ProductStatus   `db:"status"`
 	Name        string          `db:"name"`
 	Description string          `db:"description"`
@@ -19,13 +19,16 @@ const (
 
 type ProductController interface {
 	Register(router Router)
+	CreateNew(context Context, session UserSession)
 	GetByID(context Context, session UserSession)
 }
 
 type ProductUsecase interface {
-	ID(id uint) (*Product, error)
+	Create(accountId uint, product *Product) error
+	FetchByID(id uint) (*Product, error)
 }
 
 type ProductRepository interface {
-	FetchByID(id uint) (*Product, error)
+	ID(id uint) (*Product, error)
+	Insert(product *Product) error
 }

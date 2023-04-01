@@ -10,11 +10,20 @@ type Router interface {
 
 type RouteGroup interface {
 	Group(relativeRath string) RouteGroup
-	GET(relativePath string, handlers Handler, authorized AccountType)
-	POST(relativePath string, handlers Handler, authorized AccountType)
-	PATCH(relativePath string, handlers Handler, authorized AccountType)
-	DELETE(relativePath string, handlers Handler, authorized AccountType)
+	GET(relativePath string, handlers Handler, authorized AuthLevel)
+	POST(relativePath string, handlers Handler, authorized AuthLevel)
+	PATCH(relativePath string, handlers Handler, authorized AuthLevel)
+	DELETE(relativePath string, handlers Handler, authorized AuthLevel)
 }
+
+type AuthLevel int
+
+// Should map directly to AccountType
+const (
+	AuthLevelNone AuthLevel = iota
+	AuthLevelUser
+	AuthLevelStaff
+)
 
 type Controller interface {
 	Register(router Router)

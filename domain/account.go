@@ -13,9 +13,8 @@ type Account struct {
 type AccountType int
 
 const (
-	AccountTypeUnknown AccountType = iota
+	AccountTypeUser AccountType = iota + 1
 	AccountTypeStaff
-	AccountTypeUser
 )
 
 type AccountController interface {

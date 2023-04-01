@@ -79,24 +79,24 @@ func (grg *GinRouteGroup) Group(path string) domain.RouteGroup {
 	return &GinRouteGroup{grg.RouterGroup.Group(path), grg.router}
 }
 
-func (grg *GinRouteGroup) GET(path string, handler domain.Handler, authorized domain.AccountType) {
+func (grg *GinRouteGroup) GET(path string, handler domain.Handler, authorized domain.AuthLevel) {
 	grg.RouterGroup.GET(path, grg.endpointHandler(handler, authorized))
 }
 
-func (grg *GinRouteGroup) POST(path string, handler domain.Handler, authorized domain.AccountType) {
+func (grg *GinRouteGroup) POST(path string, handler domain.Handler, authorized domain.AuthLevel) {
 	grg.RouterGroup.POST(path, grg.endpointHandler(handler, authorized))
 }
 
-func (grg *GinRouteGroup) PATCH(path string, handler domain.Handler, authorized domain.AccountType) {
+func (grg *GinRouteGroup) PATCH(path string, handler domain.Handler, authorized domain.AuthLevel) {
 	grg.RouterGroup.PATCH(path, grg.endpointHandler(handler, authorized))
 }
 
-func (grg *GinRouteGroup) DELETE(path string, handler domain.Handler, authorized domain.AccountType) {
+func (grg *GinRouteGroup) DELETE(path string, handler domain.Handler, authorized domain.AuthLevel) {
 	grg.RouterGroup.DELETE(path, grg.endpointHandler(handler, authorized))
 }
 
-func (grg *GinRouteGroup) endpointHandler(handler domain.Handler, authorized domain.AccountType) func(c *gin.Context) {
-	if authorized != domain.AccountTypeUnknown {
+func (grg *GinRouteGroup) endpointHandler(handler domain.Handler, authorized domain.AuthLevel) func(c *gin.Context) {
+	if authorized != domain.AuthLevelNone {
 		return func(c *gin.Context) {
 			context := NewContext(c)
 
@@ -110,7 +110,7 @@ func (grg *GinRouteGroup) endpointHandler(handler domain.Handler, authorized dom
 				context.String(http.StatusUnauthorized, "401 Unauthorized") // TODO: Better Errors?
 				return
 			}
-			if authorized == domain.AccountTypeStaff && a.Type != domain.AccountTypeStaff {
+			if a.Type < domain.AccountType(authorized) {
 				context.String(http.StatusUnauthorized, "401 Unauthorized") // TODO: Better Errors?
 				return
 			}
