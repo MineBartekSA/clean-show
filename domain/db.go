@@ -22,6 +22,7 @@ type DBModel struct {
 }
 
 type Stmt interface {
+	Get(dst interface{}, args interface{}) error
 	Exec(args interface{}) (sql.Result, error)
 	Select(dst interface{}, args interface{}) error
 }

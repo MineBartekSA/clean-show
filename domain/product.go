@@ -2,11 +2,11 @@ package domain
 
 type Product struct {
 	DBModel     `json:"-"`
-	Status      ProductStatus   `db:"status"`
-	Name        string          `db:"name"`
-	Description string          `db:"description"`
-	Price       float64         `db:"price"`
-	Images      DBArray[string] `db:"images"`
+	Status      ProductStatus   `db:"status" json:"status"`
+	Name        string          `db:"name" json:"name"`
+	Description string          `db:"description" json:"description"`
+	Price       float64         `db:"price" json:"price"`
+	Images      DBArray[string] `db:"images" json:"images"`
 }
 
 type ProductStatus int
@@ -19,16 +19,27 @@ const (
 
 type ProductController interface {
 	Register(router Router)
-	CreateNew(context Context, session UserSession)
+	Get(context Context, session UserSession)
+	Post(context Context, session UserSession)
 	GetByID(context Context, session UserSession)
+	Patch(context Context, session UserSession)
+	Delete(context Context, session UserSession)
 }
 
 type ProductUsecase interface {
+	TotalCount() (uint, error)
+	Fetch(limit, page int) ([]Product, error)
 	Create(accountId uint, product *Product) error
 	FetchByID(id uint) (*Product, error)
+	Modify(accountId, productId uint, data map[string]any) error
+	Remove(accountId, productId uint) error
 }
 
 type ProductRepository interface {
-	ID(id uint) (*Product, error)
+	Count() (uint, error)
+	Select(limit, page int) ([]Product, error)
+	SelectID(id uint) (*Product, error)
 	Insert(product *Product) error
+	Update(product *Product) error
+	Delete(id uint) error
 }

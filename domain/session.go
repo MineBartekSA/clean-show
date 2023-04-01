@@ -9,6 +9,8 @@ type Session struct {
 type UserSession interface {
 	Authorized() bool
 	GetAccount() *Account
+	GetAccountID() uint
+	IsStaff() bool
 }
 
 type SessionUsecase interface {

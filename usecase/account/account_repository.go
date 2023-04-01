@@ -21,6 +21,6 @@ func NewAccountRepository(db domain.DB) domain.AccountRepository {
 
 func (ar *accountRepository) SelectID(id uint) (*domain.Account, error) {
 	var account domain.Account
-	err := ar.selectID.Select(&account, &domain.H{"id": id})
+	err := ar.selectID.Get(&account, domain.H{"id": id})
 	return &account, err
 }

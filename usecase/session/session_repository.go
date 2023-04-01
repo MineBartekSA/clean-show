@@ -18,7 +18,7 @@ type sessionRespository struct {
 }
 
 func NewSessionRepository(db domain.DB) domain.SessionRepository {
-	tokenSelect, err := db.PrepareSelect("sessions", "token = :token AND updated_at > "+domain.DBInterval(domain.DBNow(), time.Minute*30))
+	tokenSelect, err := db.PrepareSelect("sessions", "token = :token AND updated_at > "+domain.DBInterval(domain.DBNow(), time.Minute*-30))
 	if err != nil {
 		Log.Panicw("failed to prepare a named select statement", "err", err)
 	}
@@ -32,14 +32,14 @@ func NewSessionRepository(db domain.DB) domain.SessionRepository {
 	}
 	delete, err := db.PrepareSoftDelete("sessions", "id = :id")
 	if err != nil {
-		Log.Panicw("failed to prepare a named delete statement", "err", err)
+		Log.Panicw("failed to prepare a named soft delete statement", "err", err)
 	}
 	return &sessionRespository{db, tokenSelect, insert, update, delete}
 }
 
 func (sr *sessionRespository) SelectByToken(token string) (*domain.Session, error) {
 	var session domain.Session
-	err := sr.tokenSelect.Select(&session, &domain.H{"token": token})
+	err := sr.tokenSelect.Get(&session, domain.H{"token": token})
 	return &session, err
 }
 
@@ -59,17 +59,17 @@ func (sr *sessionRespository) Insert(session *domain.Session) error {
 			return nil
 		})
 	} else {
-		err = sr.insert.Select(&session, sr.db.PrepareStruct(&session))
+		err = sr.insert.Get(&session, sr.db.PrepareStruct(&session))
 	}
 	return err
 }
 
 func (sr *sessionRespository) Extend(session_id uint) error {
-	_, err := sr.update.Exec(&domain.H{"id": session_id})
+	_, err := sr.update.Exec(domain.H{"id": session_id})
 	return err
 }
 
 func (sr *sessionRespository) Delete(session_id uint) error {
-	_, err := sr.delete.Exec(&domain.H{"id": session_id})
+	_, err := sr.delete.Exec(domain.H{"id": session_id})
 	return err
 }

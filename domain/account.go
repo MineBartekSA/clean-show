@@ -1,13 +1,13 @@
 package domain
 
 type Account struct {
-	DBModel
-	Type    AccountType `db:"type"`
-	Email   string      `db:"email"`
-	Hash    string      `db:"hash"`
-	Salt    string      `db:"salt"`
-	Name    string      `db:"name"`
-	Surname string      `db:"surname"`
+	DBModel `json:"-"`
+	Type    AccountType `db:"type" json:"type" patch:"-"`
+	Email   string      `db:"email" json:"email"`
+	Hash    string      `db:"hash" json:"-"`
+	Salt    string      `db:"salt" json:"-"`
+	Name    string      `db:"name" json:"name"`
+	Surname string      `db:"surname" json:"surname"`
 }
 
 type AccountType int
@@ -18,11 +18,13 @@ const (
 )
 
 type AccountController interface {
-	// TODO: Implement
+	Register(router Router)
+	GetByID(context Context, session UserSession)
 }
 
 type AccountUsecase interface {
 	FetchBySession(session *Session) (*Account, error)
+	FetchByID(session UserSession, id uint) (*Account, error)
 }
 
 type AccountRepository interface {

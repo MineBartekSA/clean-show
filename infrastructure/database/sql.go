@@ -59,7 +59,7 @@ func NewSqlDB() domain.DB {
 	return &sqldb{db}
 }
 
-func (db *sqldb) PrepareStruct(arg any) any { // TODO: Maybe do this automaticly
+func (db *sqldb) PrepareStruct(arg any) any { // TODO: Maybe do this automaticly // Is this needed? DB does this automatically. UpdatedAt is built in into the query
 	val := reflect.ValueOf(arg)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
@@ -167,7 +167,7 @@ func getStructureKeys(arg any) []string { // TODO: Test
 		if tag != "" {
 			key = tag
 		}
-		if key == "-" || key == "id" { // TODO: Check if ommiting id is necessary MySQL and Postgres. Might leave it be, becase SQLite really doesn't want to cooperate
+		if key == "-" || key == "dbmodel" {
 			continue
 		}
 		f := val.Field(i)
@@ -227,7 +227,9 @@ func createTable(table, columns string) string {
 	} else {
 		sql += "id INTEGER PRIMARY KEY, " // Unknown SQL databse, defulting to just making id the primary key
 	}
-	sql += "created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, deleted_at DATETIME, "
+	sql += "created_at DATETIME NOT NULL DEFAULT " + domain.DBNow() + ", " // TODO: Test for SQLite
+	sql += "updated_at DATETIME NOT NULL DEFAULT " + domain.DBNow() + ", "
+	sql += "deleted_at DATETIME, "
 	sql += columns
 	sql += ")"
 	return sql

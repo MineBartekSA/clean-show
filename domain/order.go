@@ -9,13 +9,13 @@ import (
 
 type Order struct {
 	DBModel
-	Status          OrderStatus           `db:"status"`
-	OrderBy         uint                  `db:"order_by"`
-	ShippingAddress string                `db:"shipping_address"`
-	InvoiceAddress  string                `db:"invoice_address"`
-	Products        DBArray[ProductOrder] `db:"products"`
-	ShippingPrice   float64               `db:"shipping_price"`
-	Total           float64               `db:"total"`
+	Status          OrderStatus           `db:"status" json:"status"`
+	OrderBy         uint                  `db:"order_by" json:"order_by" patch:"-"`
+	ShippingAddress string                `db:"shipping_address" json:"shipping_address"`
+	InvoiceAddress  string                `db:"invoice_address" json:"invoice_address"`
+	Products        DBArray[ProductOrder] `db:"products" json:"products"`
+	ShippingPrice   float64               `db:"shipping_price" json:"shipping_price"`
+	Total           float64               `db:"total" json:"total"`
 }
 
 type OrderStatus int
@@ -30,9 +30,9 @@ const (
 )
 
 type ProductOrder struct {
-	ProductID uint
-	Amount    uint
-	Price     float64
+	ProductID uint    `json:"product_id"`
+	Amount    uint    `json:"amount"`
+	Price     float64 `json:"price"`
 }
 
 func (po *ProductOrder) FromString(in string) {
@@ -62,13 +62,30 @@ func (po ProductOrder) String() string {
 }
 
 type OrderController interface {
-	Register(Router)
+	Register(router Router)
+	Get(context Context, session UserSession)
+	Post(context Context, session UserSession)
+	GetByID(context Context, session UserSession)
+	Patch(context Context, session UserSession)
+	PostCancel(context Context, session UserSession)
+	Delete(context Context, session UserSession)
 }
 
 type OrderUsecase interface {
-	//
+	TotalCount() (uint, error)
+	Fetch(limit, page int) ([]Order, error)
+	Create(order *Order) error
+	FetchByID(session UserSession, id uint) (*Order, error)
+	Modify(accountId, orderId uint, data map[string]any) error
+	Cancel(session UserSession, orderId uint) error
+	Delete(accountId, orderId uint) error
 }
 
 type OrderRepository interface {
-	//
+	Count() (uint, error)
+	Select(limit, page int) ([]Order, error)
+	SelectID(id uint) (*Order, error)
+	Insert(order *Order) error
+	Update(order *Order) error
+	Delete(id uint) error
 }
