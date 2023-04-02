@@ -17,12 +17,12 @@ func NewAccountUsecase(repository domain.AccountRepository, audit domain.AuditUs
 }
 
 func (au *accountUsecase) FetchBySession(session *domain.Session) (*domain.Account, error) {
-	return au.repository.SelectID(session.AccountID)
+	return au.repository.SelectID(session.AccountID, true)
 }
 
 func (au *accountUsecase) FetchByID(session domain.UserSession, id uint) (*domain.Account, error) {
 	if !session.IsStaff() && id != session.GetAccountID() {
 		return nil, fmt.Errorf("only staff users can fetch other accounts information")
 	}
-	return au.repository.SelectID(id)
+	return au.repository.SelectID(id, false)
 }

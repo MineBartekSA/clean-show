@@ -8,7 +8,7 @@ import (
 )
 
 type Order struct {
-	DBModel
+	DBModel         `json:"-"`
 	Status          OrderStatus           `db:"status" json:"status"`
 	OrderBy         uint                  `db:"order_by" json:"order_by" patch:"-"`
 	ShippingAddress string                `db:"shipping_address" json:"shipping_address"`
@@ -61,6 +61,30 @@ func (po ProductOrder) String() string {
 	return fmt.Sprintf("%d,%d,%f", po.ProductID, po.Amount, po.Price)
 }
 
+type OrderCreate struct {
+	ShippingAddress string         `json:"shipping_address"`
+	InvoiceAddress  string         `json:"invoice_address"`
+	Products        []ProductOrder `json:"products"`
+	ShippingPrice   float64        `json:"shipping_price"`
+}
+
+func (oc *OrderCreate) ToOrder(orderBy uint) *Order {
+	total := float64(0)
+	for _, product := range oc.Products {
+		total += product.Price
+	}
+	total += oc.ShippingPrice
+	return &Order{
+		Status:          OrderStatusCreated,
+		OrderBy:         orderBy,
+		ShippingAddress: oc.ShippingAddress,
+		InvoiceAddress:  oc.InvoiceAddress,
+		Products:        oc.Products,
+		ShippingPrice:   oc.ShippingPrice,
+		Total:           total,
+	}
+}
+
 type OrderController interface {
 	Register(router Router)
 	Get(context Context, session UserSession)
@@ -74,7 +98,7 @@ type OrderController interface {
 type OrderUsecase interface {
 	TotalCount() (uint, error)
 	Fetch(limit, page int) ([]Order, error)
-	Create(order *Order) error
+	Create(accountId uint, create *OrderCreate) (*Order, error)
 	FetchByID(session UserSession, id uint) (*Order, error)
 	Modify(accountId, orderId uint, data map[string]any) error
 	Cancel(session UserSession, orderId uint) error

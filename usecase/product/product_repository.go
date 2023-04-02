@@ -64,9 +64,9 @@ func (pr *productRepository) SelectID(id uint) (*domain.Product, error) {
 
 func (pr *productRepository) Insert(product *domain.Product) error {
 	var err error
-	if config.Env.DBDriver == "mysql" {
+	if config.Env.DBDriver == "mysql" { // TODO: Try to generalize Inserts
 		err = pr.db.Transaction(func(tx domain.Tx) error {
-			res, err := tx.Stmt(pr.insert).Exec(pr.db.PrepareStruct(&product))
+			res, err := tx.Stmt(pr.insert).Exec(pr.db.PrepareStruct(product))
 			if err != nil {
 				return err
 			}
@@ -78,7 +78,7 @@ func (pr *productRepository) Insert(product *domain.Product) error {
 			return nil
 		})
 	} else {
-		err = pr.insert.Get(&product, pr.db.PrepareStruct(&product))
+		err = pr.insert.Get(product, pr.db.PrepareStruct(product))
 	}
 	return err
 }

@@ -8,19 +8,28 @@ import (
 type accountRepository struct {
 	db domain.DB
 
-	selectID domain.Stmt
+	selectPartial domain.Stmt
+	selectFull    domain.Stmt
 }
 
 func NewAccountRepository(db domain.DB) domain.AccountRepository {
-	selectID, err := db.PrepareSelect("accounts", "id = :id")
+	selectPartial, err := db.Prepare("SELECT type, email, name, surname FROM accounts WHERE deleted_at IS NULL AND id = :id")
 	if err != nil {
 		Log.Panicw("failed to prepare a named select statement", "err", err)
 	}
-	return &accountRepository{db, selectID}
+	selectFull, err := db.PrepareSelect("accounts", "id = :id")
+	if err != nil {
+		Log.Panicw("failed to prepare a named select statement", "err", err)
+	}
+	return &accountRepository{db, selectPartial, selectFull}
 }
 
-func (ar *accountRepository) SelectID(id uint) (*domain.Account, error) {
+func (ar *accountRepository) SelectID(id uint, full bool) (res *domain.Account, err error) {
 	var account domain.Account
-	err := ar.selectID.Get(&account, domain.H{"id": id})
+	if full {
+		err = ar.selectFull.Get(&account, domain.H{"id": id})
+	} else {
+		err = ar.selectPartial.Get(&account, domain.H{"id": id})
+	}
 	return &account, err
 }

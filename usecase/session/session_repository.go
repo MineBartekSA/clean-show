@@ -18,7 +18,7 @@ type sessionRespository struct {
 }
 
 func NewSessionRepository(db domain.DB) domain.SessionRepository {
-	tokenSelect, err := db.PrepareSelect("sessions", "token = :token AND updated_at > "+domain.DBInterval(domain.DBNow(), time.Minute*-30))
+	tokenSelect, err := db.PrepareSelect("sessions", "updated_at > "+domain.DBInterval(domain.DBNow(), time.Minute*-30)+" AND token = :token")
 	if err != nil {
 		Log.Panicw("failed to prepare a named select statement", "err", err)
 	}

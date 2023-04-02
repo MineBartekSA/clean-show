@@ -28,5 +28,5 @@ type AccountUsecase interface {
 }
 
 type AccountRepository interface {
-	SelectID(id uint) (*Account, error)
+	SelectID(id uint, full bool) (*Account, error)
 }

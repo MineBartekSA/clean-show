@@ -30,31 +30,40 @@ func NewSqlDB() domain.DB {
 		Log.Fatalw("failed to ping databse", "err", err)
 	}
 
-	db.MustExec(createTable("audit_log", `
+	createTable(db, "audit_log", `
 		type INT NOT NULL,
 		resource_type INT NOT NULL,
 		resource_id INT NOT NULL,
 		executor_id INT NOT NULL
-	`))
-	db.MustExec(createTable("sessions", `
+	`)
+	createTable(db, "sessions", `
 		account_id INT NOT NULL,
-		token TEXT NOT NULL
-	`))
-	db.MustExec(createTable("accounts", `
+		token VARCHAR(128) NOT NULL
+	`, "updated_at token", "UNIQUE token")
+	createTable(db, "accounts", `
 		type INT NOT NULL,
-		email TEXT NOT NULL,
+		email VARCHAR(320) NOT NULL,
 		hash TEXT NOT NULL,
 		salt TEXT NOT NULL,
 		name TEXT NOT NULL,
 		surname TEXT NOT NULL
-	`))
-	db.MustExec(createTable("products", `
+	`, "UNIQUE email") // TODO: Change hash and salt to VARCHAR // namd and surname should also be VARCHAR
+	createTable(db, "products", `
 		status INT NOT NULL,
 		name TEXT NOT NULL,
 		description TEXT NOT NULL,
 		price REAL NOT NULL,
 		images TEXT NOT NULL
-	`))
+	`) // TODO: name should be chnaged to VARCHAR
+	createTable(db, "orders", `
+		status INT NOT NULL,
+		order_by INT NOT NULL,
+		shipping_address TEXT NOT NULL,
+		invoice_address TEXT NOT NULL,
+		products TEXT NOT NULL,
+		shipping_price REAL NOT NULL,
+		total REAL NOT NULL
+	`, "order_by")
 
 	return &sqldb{db}
 }
@@ -216,21 +225,84 @@ func checkStruct(tag string, val reflect.Value) []string {
 	return []string{}
 }
 
-func createTable(table, columns string) string {
+type index struct {
+	table   string
+	unique  bool
+	columns []string
+}
+
+func (i *index) Name() string {
+	name := ""
+	if i.unique {
+		name += "u"
+	}
+	return name + fmt.Sprintf("idx_%s_%s", i.table, strings.Join(i.columns, "_"))
+}
+
+func (i *index) String() string {
+	sql := "CREATE "
+	if i.unique {
+		sql += "UNIQUE "
+	}
+	sql += "INDEX "
+	if config.Env.DBDriver != "mysql" {
+		sql += "IF NOT EXISTS "
+	}
+	sql += i.Name() + " "
+	sql += "ON " + i.table + " "
+	sql += "(" + strings.Join(i.columns, ", ") + ")"
+	return sql
+}
+
+func indexFromString(table, in string) *index {
+	split := strings.Split(in, " ")
+	i := index{table: table}
+	if strings.ToLower(split[0]) == "unique" {
+		i.unique = true
+		if len(split) == 1 {
+			Log.Panicw("invalif index format", "table", table, "raw", in)
+		}
+		split = split[1:]
+	}
+	i.columns = split
+	return &i
+}
+
+func createTable(db *sqlx.DB, table, columns string, indexes ...string) {
+	now := domain.DBNow()
 	sql := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s(", table)
 	if config.Env.DBDriver == "mysql" {
 		sql += "id INT PRIMARY KEY AUTO_INCREMENT, "
 	} else if config.Env.DBDriver == "sqlite3" {
 		sql += "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+		now = "(" + now + ")"
 	} else if config.Env.DBDriver == "postgres" {
 		sql += "id SERIAL PRIMARY KEY, "
 	} else {
 		sql += "id INTEGER PRIMARY KEY, " // Unknown SQL databse, defulting to just making id the primary key
 	}
-	sql += "created_at DATETIME NOT NULL DEFAULT " + domain.DBNow() + ", " // TODO: Test for SQLite
-	sql += "updated_at DATETIME NOT NULL DEFAULT " + domain.DBNow() + ", "
+	sql += "created_at DATETIME NOT NULL DEFAULT " + now + ", " // TODO: Test for SQLite
+	sql += "updated_at DATETIME NOT NULL DEFAULT " + now + ", "
 	sql += "deleted_at DATETIME, "
 	sql += columns
 	sql += ")"
-	return sql
+	db.MustExec(sql)
+	bindex := []*index{indexFromString(table, "deleted_at")}
+	for _, raw := range indexes {
+		bindex = append(bindex, indexFromString(table, raw))
+	}
+	for _, i := range bindex {
+		if config.Env.DBDriver == "mysql" {
+			var res uint
+			err := db.Get(&res, fmt.Sprintf("SELECT COUNT(1) FROM INFORMATION_SCHEMA.STATISTICS WHERE table_schema=DATABASE() AND table_name='%s' AND index_name='%s'", table, i.Name()))
+			if err != nil {
+				Log.Panicw("failed to check for index", "table", table, "index", i.Name(), "err", err)
+			}
+			if res != 0 {
+				continue
+			}
+		}
+		Log.Debugln(i.String())
+		db.MustExec(i.String())
+	}
 }
