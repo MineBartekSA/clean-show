@@ -54,7 +54,7 @@ func (r *router) Run() {
 }
 
 func (r *router) API() domain.RouteGroup {
-	return &GinRouteGroup{r.api, r}
+	return &ginRouteGroup{r.api, r}
 }
 
 func (r *router) Auth(token string) (*domain.Session, *domain.Account, error) {
@@ -69,33 +69,33 @@ func (r *router) Auth(token string) (*domain.Session, *domain.Account, error) {
 	return session, account, nil
 }
 
-type GinRouteGroup struct {
+type ginRouteGroup struct {
 	*gin.RouterGroup
 
 	router domain.Router
 }
 
-func (grg *GinRouteGroup) Group(path string) domain.RouteGroup {
-	return &GinRouteGroup{grg.RouterGroup.Group(path), grg.router}
+func (grg *ginRouteGroup) Group(path string) domain.RouteGroup {
+	return &ginRouteGroup{grg.RouterGroup.Group(path), grg.router}
 }
 
-func (grg *GinRouteGroup) GET(path string, handler domain.Handler, authorized domain.AuthLevel) {
+func (grg *ginRouteGroup) GET(path string, handler domain.Handler, authorized domain.AuthLevel) {
 	grg.RouterGroup.GET(path, grg.endpointHandler(handler, authorized))
 }
 
-func (grg *GinRouteGroup) POST(path string, handler domain.Handler, authorized domain.AuthLevel) {
+func (grg *ginRouteGroup) POST(path string, handler domain.Handler, authorized domain.AuthLevel) {
 	grg.RouterGroup.POST(path, grg.endpointHandler(handler, authorized))
 }
 
-func (grg *GinRouteGroup) PATCH(path string, handler domain.Handler, authorized domain.AuthLevel) {
+func (grg *ginRouteGroup) PATCH(path string, handler domain.Handler, authorized domain.AuthLevel) {
 	grg.RouterGroup.PATCH(path, grg.endpointHandler(handler, authorized))
 }
 
-func (grg *GinRouteGroup) DELETE(path string, handler domain.Handler, authorized domain.AuthLevel) {
+func (grg *ginRouteGroup) DELETE(path string, handler domain.Handler, authorized domain.AuthLevel) {
 	grg.RouterGroup.DELETE(path, grg.endpointHandler(handler, authorized))
 }
 
-func (grg *GinRouteGroup) endpointHandler(handler domain.Handler, authorized domain.AuthLevel) func(c *gin.Context) {
+func (grg *ginRouteGroup) endpointHandler(handler domain.Handler, authorized domain.AuthLevel) func(c *gin.Context) {
 	if authorized != domain.AuthLevelNone {
 		return func(c *gin.Context) {
 			context := NewContext(c)

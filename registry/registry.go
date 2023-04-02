@@ -38,7 +38,7 @@ func (r *registry) Start() {
 			fx.Annotate(product.NewProductController, fx.As(new(domain.Controller)), fx.ResultTags(`group:"controllers"`)),
 			fx.Annotate(order.NewOrderRepository, fx.As(new(domain.OrderRepository))),
 			fx.Annotate(order.NewOrderUsecase, fx.As(new(domain.OrderUsecase))),
-			fx.Annotate(order.NewOrderController, fx.As(new(domain.Controller)), fx.ResultTags(`group:"controllers`)),
+			fx.Annotate(order.NewOrderController, fx.As(new(domain.Controller)), fx.ResultTags(`group:"controllers"`)),
 			fx.Annotate(account.NewAccountRepository, fx.As(new(domain.AccountRepository))),
 			fx.Annotate(account.NewAccountUsecase, fx.As(new(domain.AccountUsecase))),
 			fx.Annotate(account.NewAccountController, fx.As(new(domain.Controller)), fx.ResultTags(`group:"controllers"`)),
