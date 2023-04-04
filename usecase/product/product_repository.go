@@ -29,27 +29,27 @@ func NewProductRepository(db domain.DB) domain.ProductRepository {
 }
 
 func (pr *productRepository) Count() (res uint, err error) {
-	err = pr.count.Get(&res, domain.H{})
+	err = domain.SQLError(pr.count.Get(&res, domain.H{}))
 	return
 }
 
 func (pr *productRepository) Select(limit, page int) ([]domain.Product, error) {
 	res := []domain.Product{}
 	err := pr.selectList.Select(&res, domain.H{"limit": limit, "offset": (page - 1) * limit})
-	return res, err
+	return res, domain.SQLError(err)
 }
 
 func (pr *productRepository) SelectID(id uint) (*domain.Product, error) {
 	var product domain.Product
 	err := pr.selectID.Get(&product, domain.H{"id": id})
-	return &product, err
+	return &product, domain.SQLError(err)
 }
 
 func (pr *productRepository) Insert(product *domain.Product) error {
 	var err error
 	if config.Env.DBDriver == "mysql" { // TODO: Try to generalize Inserts
 		err = pr.db.Transaction(func(tx domain.Tx) error {
-			res, err := tx.Stmt(pr.insert).Exec(pr.db.PrepareStruct(product))
+			res, err := tx.Stmt(pr.insert).Exec(product)
 			if err != nil {
 				return err
 			}
@@ -61,17 +61,17 @@ func (pr *productRepository) Insert(product *domain.Product) error {
 			return nil
 		})
 	} else {
-		err = pr.insert.Get(product, pr.db.PrepareStruct(product))
+		err = pr.insert.Get(product, product)
 	}
-	return err
+	return domain.SQLError(err)
 }
 
 func (pr *productRepository) Update(product *domain.Product) error {
 	_, err := pr.update.Exec(product)
-	return err
+	return domain.SQLError(err)
 }
 
 func (pr *productRepository) Delete(id uint) error {
 	_, err := pr.delete.Exec(domain.H{"id": id})
-	return err
+	return domain.SQLError(err)
 }

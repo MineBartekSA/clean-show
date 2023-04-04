@@ -1,8 +1,6 @@
 package order
 
 import (
-	"fmt"
-
 	"github.com/minebarteksa/clean-show/domain"
 	"github.com/minebarteksa/clean-show/usecase"
 )
@@ -59,7 +57,7 @@ func (ou *orderUsecase) FetchByID(session domain.UserSession, id uint) (*domain.
 		return nil, err
 	}
 	if !session.IsStaff() && session.GetAccountID() != order.OrderBy {
-		return nil, fmt.Errorf("only staff users can see other users orders")
+		return nil, domain.Fatal(domain.ErrUnauthorized, "only staff users can see other users orders").Call()
 	}
 	return order, nil
 }
@@ -87,7 +85,7 @@ func (ou *orderUsecase) Cancel(session domain.UserSession, orderId uint) error {
 		return err
 	}
 	if !session.IsStaff() && aid != orderBy {
-		return fmt.Errorf("only staff users can cancel other users orders")
+		return domain.Fatal(domain.ErrUnauthorized, "only staff users can cancel other users orders").Call()
 	}
 	err = ou.repository.UpdateStatus(orderId, domain.OrderStatusCanceled)
 	if err != nil {

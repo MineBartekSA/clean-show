@@ -7,6 +7,7 @@ type Context interface {
 	UnmarshalBody(in any) error
 	Cookie(name string) (string, error)
 
+	Error(err error)
 	JSON(code int, i any)
 	Status(code int)
 	String(code int, format string, value ...any)

@@ -41,9 +41,9 @@ func (su *sessionUsecase) Create(account_id uint) (*domain.Session, error) {
 		return nil, err
 	}
 	randString := base64.URLEncoding.EncodeToString(buffer)
-	buffer = make([]byte, 8)
-	binary.LittleEndian.AppendUint64(buffer, uint64(time.Now().UTC().UnixMilli()))
-	token := base64.URLEncoding.EncodeToString(buffer) + "."
+	buffer = make([]byte, binary.MaxVarintLen64)
+	n := binary.PutVarint(buffer, time.Now().UTC().UnixMilli())
+	token := base64.URLEncoding.EncodeToString(buffer[:n]) + "."
 	token += randString[:128-len(token)]
 	session := domain.Session{
 		AccountID: account_id,

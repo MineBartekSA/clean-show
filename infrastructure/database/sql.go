@@ -9,6 +9,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
@@ -65,27 +66,6 @@ func NewSqlDB() domain.DB {
 	`, "order_by")
 
 	return &sqldb{db}
-}
-
-func (db *sqldb) PrepareStruct(arg any) any { // TODO: Maybe do this automaticly // Is this needed? DB does this automatically. UpdatedAt is built in into the query
-	val := reflect.ValueOf(arg)
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	if val.Kind() != reflect.Struct {
-		Log.Panicw("argument not a structure")
-	}
-	dbm := val.FieldByName("DBModel")
-	if dbm == reflect.ValueOf(nil) {
-		Log.Panicw("argument structure does not contain DBModel")
-	}
-	now := reflect.ValueOf(time.Now())
-	created := dbm.FieldByName("CreatedAt")
-	if created.IsZero() {
-		created.Set(now)
-	}
-	dbm.FieldByName("UpdatedAt").Set(now)
-	return arg
 }
 
 func (db *sqldb) PrepareInsertStruct(table string, arg any) domain.Stmt {

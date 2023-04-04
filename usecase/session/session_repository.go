@@ -31,14 +31,14 @@ func NewSessionRepository(db domain.DB) domain.SessionRepository {
 func (sr *sessionRespository) SelectByToken(token string) (*domain.Session, error) {
 	var session domain.Session
 	err := sr.tokenSelect.Get(&session, domain.H{"token": token})
-	return &session, err
+	return &session, domain.SQLError(err)
 }
 
 func (sr *sessionRespository) Insert(session *domain.Session) error {
 	var err error
 	if config.Env.DBDriver == "mysql" {
 		err = sr.db.Transaction(func(tx domain.Tx) error {
-			res, err := tx.Stmt(sr.insert).Exec(sr.db.PrepareStruct(&session))
+			res, err := tx.Stmt(sr.insert).Exec(session)
 			if err != nil {
 				return err
 			}
@@ -50,22 +50,22 @@ func (sr *sessionRespository) Insert(session *domain.Session) error {
 			return nil
 		})
 	} else {
-		err = sr.insert.Get(&session, sr.db.PrepareStruct(&session))
+		err = sr.insert.Get(&session, session)
 	}
-	return err
+	return domain.SQLError(err)
 }
 
 func (sr *sessionRespository) Extend(sessionId uint) error {
 	_, err := sr.update.Exec(domain.H{"id": sessionId})
-	return err
+	return domain.SQLError(err)
 }
 
 func (sr *sessionRespository) Delete(sessionId uint) error {
 	_, err := sr.delete.Exec(domain.H{"id": sessionId})
-	return err
+	return domain.SQLError(err)
 }
 
 func (sr *sessionRespository) DeleteByAccount(acountId uint) error {
 	_, err := sr.deleteAccount.Exec(domain.H{"account": acountId})
-	return err
+	return domain.SQLError(err)
 }

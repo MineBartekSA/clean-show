@@ -18,7 +18,7 @@ func (au *auditUsecase) Create(entry_type domain.EntryType, resource_type domain
 		ResourceType: resource_type,
 		ResourceID:   resource_id,
 		ExecutorID:   executor,
-	}) // TODO: Encapsulate error?
+	})
 }
 
 func (au *auditUsecase) Creation(executor uint, res_type domain.ResourceType, res_id uint) error {

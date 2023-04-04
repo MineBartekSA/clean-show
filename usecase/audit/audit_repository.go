@@ -18,6 +18,6 @@ func NewAuditRepository(db domain.DB) domain.AuditRepository {
 }
 
 func (ar *auditRepository) Insert(entry domain.AuditEntry) error {
-	_, err := ar.insert.Exec(ar.db.PrepareStruct(&entry))
-	return err
+	_, err := ar.insert.Exec(&entry)
+	return domain.SQLError(err)
 }

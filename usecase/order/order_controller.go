@@ -31,12 +31,12 @@ func (oc *orderController) Get(context domain.Context, session domain.UserSessio
 	limit, page := usecase.GetLimitPage(context)
 	count, err := oc.usecase.TotalCount()
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	list, err := oc.usecase.Fetch(limit, page)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	pages := float64(0)
@@ -50,19 +50,19 @@ func (oc *orderController) Get(context domain.Context, session domain.UserSessio
 		Hits:  count,
 		Pages: uint(pages),
 		Data:  list,
-	}) // TODO: Add encapsulating struct with product count and page count for the given limit
+	})
 }
 
 func (oc *orderController) Post(context domain.Context, session domain.UserSession) {
 	var create domain.OrderCreate
 	err := context.UnmarshalBody(&create)
 	if err != nil {
-		context.Status(http.StatusBadRequest) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	order, err := oc.usecase.Create(session.GetAccountID(), &create)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.JSON(http.StatusOK,
@@ -77,12 +77,12 @@ func (oc *orderController) GetByID(context domain.Context, session domain.UserSe
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	order, err := oc.usecase.FetchByID(session, uint(id))
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.JSON(http.StatusOK, order)
@@ -92,18 +92,18 @@ func (oc *orderController) Patch(context domain.Context, session domain.UserSess
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	var data map[string]any
 	err = context.UnmarshalBody(&data)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	err = oc.usecase.Modify(session.GetAccountID(), uint(id), data)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)
@@ -113,12 +113,12 @@ func (oc *orderController) PostCancel(context domain.Context, session domain.Use
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	err = oc.usecase.Cancel(session, uint(id))
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)
@@ -128,12 +128,12 @@ func (oc *orderController) Delete(context domain.Context, session domain.UserSes
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	err = oc.usecase.Remove(session.GetAccountID(), uint(id))
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)

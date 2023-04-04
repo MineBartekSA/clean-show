@@ -30,12 +30,12 @@ func (pc *productController) Get(context domain.Context, session domain.UserSess
 	limit, page := usecase.GetLimitPage(context)
 	count, err := pc.usecase.TotalCount()
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	list, err := pc.usecase.Fetch(limit, page)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	pages := float64(0)
@@ -49,19 +49,19 @@ func (pc *productController) Get(context domain.Context, session domain.UserSess
 		Hits:  count,
 		Pages: uint(pages),
 		Data:  list,
-	}) // TODO: Add encapsulating struct with product count and page count for the given limit
+	})
 }
 
 func (pc *productController) Post(context domain.Context, session domain.UserSession) {
 	var product domain.Product
 	err := context.UnmarshalBody(&product)
 	if err != nil {
-		context.Status(http.StatusBadRequest) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	err = pc.usecase.Create(session.GetAccountID(), &product)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.JSON(http.StatusOK,
@@ -76,12 +76,12 @@ func (pc *productController) GetByID(context domain.Context, _ domain.UserSessio
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	product, err := pc.usecase.FetchByID(uint(id))
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.JSON(http.StatusOK, product)
@@ -91,18 +91,18 @@ func (pc *productController) Patch(context domain.Context, session domain.UserSe
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	var data map[string]interface{}
 	err = context.UnmarshalBody(&data)
 	if err != nil {
-		context.Status(http.StatusBadRequest) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	err = pc.usecase.Modify(session.GetAccountID(), uint(id), data)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)
@@ -112,12 +112,12 @@ func (pc *productController) Delete(context domain.Context, session domain.UserS
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	err = pc.usecase.Remove(session.GetAccountID(), uint(id))
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)

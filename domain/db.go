@@ -32,8 +32,6 @@ type Tx interface {
 }
 
 type DB interface {
-	PrepareStruct(arg any) any
-
 	Prepare(query string) Stmt
 	PrepareInsertStruct(table string, arg any) Stmt
 	PrepareSelect(table, where string) Stmt
@@ -133,14 +131,14 @@ func DBInterval(base string, durations ...time.Duration) string {
 		}
 	}
 	if config.Env.DBDriver == "sqlite3" {
-		return sqlite3(base, durs)
+		return lite(base, durs)
 	} else if config.Env.DBDriver == "postgres" {
-		return postgres(base, durs)
+		return post(base, durs)
 	}
-	return mysql(base, durs)
+	return my(base, durs)
 }
 
-func sqlite3(base string, durations []string) string {
+func lite(base string, durations []string) string {
 	interval := "datetime(" + base + ", "
 	for _, dur := range durations {
 		interval += "'" + dur + "', "
@@ -148,7 +146,7 @@ func sqlite3(base string, durations []string) string {
 	return interval[:len(interval)-2] + ")"
 }
 
-func postgres(base string, durations []string) string {
+func post(base string, durations []string) string {
 	interval := base
 	for _, dur := range durations {
 		interval += " + INTERVAL '" + dur + "'"
@@ -156,7 +154,7 @@ func postgres(base string, durations []string) string {
 	return interval
 }
 
-func mysql(base string, durations []string) string {
+func my(base string, durations []string) string {
 	interval := base
 	for _, dur := range durations {
 		interval += " + INTERVAL " + dur

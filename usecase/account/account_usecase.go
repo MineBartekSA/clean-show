@@ -1,8 +1,6 @@
 package account
 
 import (
-	"fmt"
-
 	"github.com/minebarteksa/clean-show/domain"
 	"github.com/minebarteksa/clean-show/usecase"
 )
@@ -33,7 +31,7 @@ func (au *accountUsecase) Login(login *domain.AccountLogin) (*domain.Account, st
 	if err != nil {
 		return nil, "", err
 	} else if !verified {
-		return nil, "", fmt.Errorf("unauthorized")
+		return nil, "", domain.Fatal(domain.ErrUnauthorized, "hash verification failed").Call()
 	}
 
 	session, err := au.session.Create(account.ID)
@@ -70,7 +68,7 @@ func (au *accountUsecase) FetchBySession(session *domain.Session) (*domain.Accou
 
 func (au *accountUsecase) FetchByID(session domain.UserSession, id uint) (*domain.Account, error) {
 	if !session.IsStaff() && id != session.GetAccountID() {
-		return nil, fmt.Errorf("only staff users can fetch other accounts information")
+		return nil, domain.Fatal(domain.ErrUnauthorized, "only staff users can fetch other accounts information").Call()
 	}
 	return au.repository.SelectID(id, false)
 }
@@ -78,14 +76,14 @@ func (au *accountUsecase) FetchByID(session domain.UserSession, id uint) (*domai
 func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, data map[string]any) error {
 	aid := session.GetAccountID()
 	if !session.IsStaff() && session.GetAccountID() != accountId {
-		return fmt.Errorf("only staff users can modify other accounts information")
+		return domain.Fatal(domain.ErrUnauthorized, "only staff users can modify other accounts information").Call()
 	}
 	account, err := au.repository.SelectID(accountId, false)
 	if err != nil {
 		return err
 	}
 	if aid != account.ID && account.Type == domain.AccountTypeStaff {
-		return fmt.Errorf("only the owner of this account can change its information")
+		return domain.Fatal(domain.ErrUnauthorized, "only the owner of this account can change its information").Call()
 	}
 	err = usecase.PatchModel(account, data)
 	if err != nil {
@@ -100,7 +98,7 @@ func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, dat
 
 func (au *accountUsecase) FetchOrders(session domain.UserSession, accountId uint) ([]domain.Order, error) {
 	if !session.IsStaff() && session.GetAccountID() != accountId {
-		return nil, fmt.Errorf("only staff users can fetch other users orders")
+		return nil, domain.Fatal(domain.ErrUnauthorized, "only staff users can fetch other users orders").Call()
 	}
 	return au.order.FetchByAccount(accountId)
 }
@@ -108,14 +106,14 @@ func (au *accountUsecase) FetchOrders(session domain.UserSession, accountId uint
 func (au *accountUsecase) ModifyPassword(session domain.UserSession, accountId uint, new string) error {
 	aid := session.GetAccountID()
 	if !session.IsStaff() && aid != accountId {
-		return fmt.Errorf("only staff users can modify other users passwords")
+		return domain.Fatal(domain.ErrUnauthorized, "only staff users can modify other users passwords").Call()
 	}
 	account, err := au.repository.SelectID(accountId, false)
 	if err != nil {
 		return err
 	}
 	if aid != account.ID && account.Type == domain.AccountTypeStaff {
-		return fmt.Errorf("only the owner of this account can change its password")
+		return domain.Fatal(domain.ErrUnauthorized, "only the owner of this account can change its password").Call()
 	}
 	account.Hash = au.hasher.Hash(new)
 	err = au.repository.Update(account)
@@ -132,7 +130,7 @@ func (au *accountUsecase) Logout(session domain.UserSession) error {
 func (au *accountUsecase) Remove(session domain.UserSession, accountId uint) error {
 	aid := session.GetAccountID()
 	if !session.IsStaff() && aid != accountId {
-		return fmt.Errorf("only staf users can remove other users accounts")
+		return domain.Fatal(domain.ErrUnauthorized, "only staff users can remove other users accounts").Call()
 	}
 	err := au.repository.Delete(accountId)
 	if err != nil {

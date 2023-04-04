@@ -31,12 +31,12 @@ func (ac *accountController) PostLogin(context domain.Context, session domain.Us
 	var login domain.AccountLogin
 	err := context.UnmarshalBody(&login)
 	if err != nil {
-		context.Status(http.StatusBadRequest) // TODO: Better errors
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	account, token, err := ac.usecase.Login(&login)
 	if err != nil {
-		context.Status(http.StatusUnauthorized) // TODO: Better errors
+		context.Error(err)
 		return
 	}
 	context.SetCookie("token", token, 0, "", "", true, true)
@@ -50,12 +50,12 @@ func (ac *accountController) PostRegister(context domain.Context, session domain
 	var register domain.AccountCreate
 	err := context.UnmarshalBody(&register)
 	if err != nil {
-		context.Status(http.StatusBadRequest) // TODO: Better errors
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	account, token, err := ac.usecase.Register(&register)
 	if err != nil {
-		context.Status(http.StatusUnauthorized) // TODO: Better errors
+		context.Error(err)
 		return
 	}
 	context.SetCookie("token", token, 0, "", "", true, true)
@@ -73,14 +73,14 @@ func (ac *accountController) GetByID(context domain.Context, session domain.User
 	} else {
 		i, err := strconv.ParseUint(raw, 10, 64)
 		if err != nil {
-			context.Status(http.StatusBadRequest) // TODO: Better errors
+			context.Error(domain.ErrBadRequest.Wrap(err).Call())
 			return
 		}
 		id = uint(i)
 	}
 	account, err := ac.usecase.FetchByID(session, id)
 	if err != nil {
-		context.Status(http.StatusNotFound)
+		context.Error(err)
 		return
 	}
 	context.JSON(http.StatusOK,
@@ -95,18 +95,18 @@ func (ac *accountController) Patch(context domain.Context, session domain.UserSe
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	var data map[string]any
 	err = context.UnmarshalBody(&data)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	err = ac.usecase.Modify(session, uint(id), data)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)
@@ -116,12 +116,12 @@ func (ac *accountController) GetOrders(context domain.Context, session domain.Us
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
-	orders, err := ac.usecase.FetchOrders(session, uint(id)) // TODO: Add paging
+	orders, err := ac.usecase.FetchOrders(session, uint(id)) // TODO: Add pageing
 	if err != nil {
-		context.Status(http.StatusInternalServerError)
+		context.Error(err)
 		return
 	}
 	context.JSON(http.StatusOK, orders)
@@ -131,7 +131,7 @@ func (ac *accountController) PostPassword(context domain.Context, session domain
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	var login domain.AccountLogin
@@ -142,7 +142,7 @@ func (ac *accountController) PostPassword(context domain.Context, session domain
 	}
 	err = ac.usecase.ModifyPassword(session, uint(id), login.Password)
 	if err != nil {
-		context.Status(http.StatusInternalServerError)
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)
@@ -151,7 +151,7 @@ func (ac *accountController) PostPassword(context domain.Context, session domain
 func (ac *accountController) GetLogout(context domain.Context, session domain.UserSession) {
 	err := ac.usecase.Logout(session)
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)
@@ -161,12 +161,12 @@ func (ac *accountController) Delete(context domain.Context, session domain.UserS
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
-		context.Status(http.StatusNotFound) // TODO: Better error
+		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
 	err = ac.usecase.Remove(session, uint(id))
 	if err != nil {
-		context.Status(http.StatusInternalServerError) // TODO: Better error
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusNoContent)

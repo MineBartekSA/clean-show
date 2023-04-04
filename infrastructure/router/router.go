@@ -105,18 +105,18 @@ func (grg *ginRouteGroup) endpointHandler(handler domain.Handler, authorized dom
 				auth = t
 			} else {
 				if !strings.HasPrefix(auth, "bearer ") {
-					context.String(http.StatusUnauthorized, "401 Unauthorized") // TODO: Better Errors?
+					context.Error(domain.ErrUnauthorized.Call())
 					return
 				}
 				auth = auth[7:]
 			}
 			s, a, err := grg.router.Auth(auth)
 			if err != nil {
-				context.String(http.StatusUnauthorized, "401 Unauthorized") // TODO: Better Errors?
+				context.Error(domain.ErrUnauthorized.Call())
 				return
 			}
 			if a.Type < domain.AccountType(authorized) {
-				context.String(http.StatusUnauthorized, "401 Unauthorized") // TODO: Better Errors?
+				context.Error(domain.ErrUnauthorized.Call())
 				return
 			}
 			session := NewSession(s, a)

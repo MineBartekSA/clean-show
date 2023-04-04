@@ -35,39 +35,39 @@ func NewOrderRepository(db domain.DB) domain.OrderRepository {
 }
 
 func (or *orderRepository) Count() (res uint, err error) {
-	err = or.count.Get(&res, domain.H{})
+	err = domain.SQLError(or.count.Get(&res, domain.H{}))
 	return
 }
 
 func (or *orderRepository) Select(limit, page int) ([]domain.Order, error) {
 	res := []domain.Order{}
 	err := or.selectList.Select(&res, domain.H{"limit": limit, "offset": (page - 1) * limit})
-	return res, err
+	return res, domain.SQLError(err)
 }
 
 func (or *orderRepository) SelectAccount(accountId uint) ([]domain.Order, error) {
 	res := []domain.Order{}
 	err := or.selectAccount.Select(&res, domain.H{"account": accountId})
-	return res, err
+	return res, domain.SQLError(err)
 }
 
 func (or *orderRepository) SelectID(id uint) (*domain.Order, error) {
 	var order domain.Order
 	err := or.selectID.Get(&order, domain.H{"id": id})
-	return &order, err
+	return &order, domain.SQLError(err)
 }
 
 func (or *orderRepository) SelectOrderBy(orderId uint) (uint, error) {
 	var by uint
 	err := or.selectOrderBy.Get(&by, domain.H{"id": orderId})
-	return by, err
+	return by, domain.SQLError(err)
 }
 
 func (or *orderRepository) Insert(order *domain.Order) error {
 	var err error
 	if config.Env.DBDriver == "mysql" { // TODO: Try to generalize Inserts
 		err = or.db.Transaction(func(tx domain.Tx) error {
-			res, err := tx.Stmt(or.insert).Exec(or.db.PrepareStruct(order))
+			res, err := tx.Stmt(or.insert).Exec(order)
 			if err != nil {
 				return err
 			}
@@ -79,22 +79,22 @@ func (or *orderRepository) Insert(order *domain.Order) error {
 			return nil
 		})
 	} else {
-		err = or.insert.Get(order, or.db.PrepareStruct(order))
+		err = or.insert.Get(order, order)
 	}
-	return err
+	return domain.SQLError(err)
 }
 
 func (or *orderRepository) Update(order *domain.Order) error {
 	_, err := or.update.Exec(order)
-	return err
+	return domain.SQLError(err)
 }
 
 func (or *orderRepository) UpdateStatus(orderId uint, status domain.OrderStatus) error {
 	_, err := or.updateStatus.Exec(domain.H{"id": orderId, "status": status})
-	return err
+	return domain.SQLError(err)
 }
 
 func (or *orderRepository) Delete(id uint) error {
 	_, err := or.delete.Exec(domain.H{"id": id})
-	return err
+	return domain.SQLError(err)
 }
