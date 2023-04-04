@@ -34,12 +34,12 @@ type Tx interface {
 type DB interface {
 	PrepareStruct(arg any) any
 
-	Prepare(query string) (Stmt, error)
-	PrepareInsertStruct(table string, arg any) (Stmt, error)
-	PrepareSelect(table, where string) (Stmt, error)
-	PrepareUpdate(table, set, where string) (Stmt, error)
-	PrepareUpdateStruct(table string, arg any, where string) (Stmt, error)
-	PrepareSoftDelete(table, where string) (Stmt, error)
+	Prepare(query string) Stmt
+	PrepareInsertStruct(table string, arg any) Stmt
+	PrepareSelect(table, where string) Stmt
+	PrepareUpdate(table, set, where string) Stmt
+	PrepareUpdateStruct(table string, arg any, where string) Stmt
+	PrepareSoftDelete(table, where string) Stmt
 
 	Exec(query string, args ...any) (sql.Result, error)
 	Select(dst interface{}, query string, args ...interface{}) error

@@ -101,11 +101,16 @@ func (grg *ginRouteGroup) endpointHandler(handler domain.Handler, authorized dom
 			context := NewContext(c)
 
 			auth := strings.ToLower(context.GetHeader("Authorization"))
-			if !strings.HasPrefix(auth, "bearer ") {
-				context.String(http.StatusUnauthorized, "401 Unauthorized") // TODO: Better Errors?
-				return
+			if t, err := context.Cookie("token"); err == nil {
+				auth = t
+			} else {
+				if !strings.HasPrefix(auth, "bearer ") {
+					context.String(http.StatusUnauthorized, "401 Unauthorized") // TODO: Better Errors?
+					return
+				}
+				auth = auth[7:]
 			}
-			s, a, err := grg.router.Auth(auth[7:])
+			s, a, err := grg.router.Auth(auth)
 			if err != nil {
 				context.String(http.StatusUnauthorized, "401 Unauthorized") // TODO: Better Errors?
 				return

@@ -131,7 +131,7 @@ func (oc *orderController) Delete(context domain.Context, session domain.UserSes
 		context.Status(http.StatusNotFound) // TODO: Better error
 		return
 	}
-	err = oc.usecase.Delete(session.GetAccountID(), uint(id))
+	err = oc.usecase.Remove(session.GetAccountID(), uint(id))
 	if err != nil {
 		context.Status(http.StatusInternalServerError) // TODO: Better error
 		return

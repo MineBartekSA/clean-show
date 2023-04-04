@@ -21,6 +21,10 @@ func (us *userSession) Authorized() bool {
 	return us.session != nil
 }
 
+func (us *userSession) GetSession() *domain.Session {
+	return us.session
+}
+
 func (us *userSession) GetAccount() *domain.Account {
 	return us.account
 }

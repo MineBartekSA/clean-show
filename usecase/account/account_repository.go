@@ -1,35 +1,76 @@
 package account
 
 import (
+	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
-	. "github.com/minebarteksa/clean-show/logger"
 )
 
 type accountRepository struct {
 	db domain.DB
 
-	selectPartial domain.Stmt
-	selectFull    domain.Stmt
+	selectEMail     domain.Stmt
+	selectIDPartial domain.Stmt
+	selectIDFull    domain.Stmt
+	insert          domain.Stmt
+	update          domain.Stmt
+	delete          domain.Stmt
 }
 
 func NewAccountRepository(db domain.DB) domain.AccountRepository {
-	selectPartial, err := db.Prepare("SELECT type, email, name, surname FROM accounts WHERE deleted_at IS NULL AND id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named select statement", "err", err)
+	return &accountRepository{
+		db:              db,
+		selectEMail:     db.PrepareSelect("accounts", "email = :email"),
+		selectIDPartial: db.Prepare("SELECT type, email, name, surname FROM accounts WHERE deleted_at IS NULL AND id = :id"),
+		selectIDFull:    db.PrepareSelect("accounts", "id = :id"),
+		insert:          db.PrepareInsertStruct("accounts", &domain.Account{}),
+		update:          db.PrepareUpdateStruct("accounts", &domain.Account{}, "id = :id"),
+		delete:          db.PrepareSoftDelete("accounts", "id = :id"),
 	}
-	selectFull, err := db.PrepareSelect("accounts", "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named select statement", "err", err)
-	}
-	return &accountRepository{db, selectPartial, selectFull}
+}
+
+func (ar *accountRepository) SelectEMail(email string) (*domain.Account, error) {
+	var account domain.Account
+	err := ar.selectEMail.Get(&account, domain.H{"email": email})
+	return &account, err
 }
 
 func (ar *accountRepository) SelectID(id uint, full bool) (res *domain.Account, err error) {
 	var account domain.Account
 	if full {
-		err = ar.selectFull.Get(&account, domain.H{"id": id})
+		err = ar.selectIDFull.Get(&account, domain.H{"id": id})
 	} else {
-		err = ar.selectPartial.Get(&account, domain.H{"id": id})
+		err = ar.selectIDPartial.Get(&account, domain.H{"id": id})
 	}
 	return &account, err
+}
+
+func (ar *accountRepository) Insert(account *domain.Account) error {
+	var err error
+	if config.Env.DBDriver == "mysql" { // TODO: Try to generalize Inserts
+		err = ar.db.Transaction(func(tx domain.Tx) error {
+			res, err := tx.Stmt(ar.insert).Exec(ar.db.PrepareStruct(account))
+			if err != nil {
+				return err
+			}
+			id, err := res.LastInsertId()
+			if err != nil {
+				return err
+			}
+			account.ID = uint(id)
+			return nil
+		})
+	} else {
+		err = ar.insert.Get(account, ar.db.PrepareStruct(account))
+	}
+	return err
+}
+
+func (ar *accountRepository) Update(account *domain.Account) error {
+	_, err := ar.update.Exec(account)
+	return err
+}
+
+func (ar *accountRepository) Delete(id uint) error {
+	_, err := ar.delete.Exec(domain.H{"id": id})
+	return err
 }

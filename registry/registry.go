@@ -16,17 +16,19 @@ type Registry interface {
 }
 
 type registry struct {
-	db domain.DB
+	db     domain.DB
+	hasher domain.Hasher
 }
 
-func NewRegistry(db domain.DB) Registry {
-	return &registry{db: db}
+func NewRegistry(db domain.DB, hasher domain.Hasher) Registry {
+	return &registry{db, hasher}
 }
 
 func (r *registry) Start() {
 	app := fx.New(
 		fx.Supply(
 			fx.Annotate(r.db, fx.As(new(domain.DB))),
+			fx.Annotate(r.hasher, fx.As(new(domain.Hasher))),
 		),
 		fx.Provide(
 			fx.Annotate(audit.NewAuditRepository, fx.As(new(domain.AuditRepository))),

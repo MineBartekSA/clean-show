@@ -3,7 +3,6 @@ package product
 import (
 	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
-	. "github.com/minebarteksa/clean-show/logger"
 )
 
 type productRepository struct {
@@ -18,31 +17,15 @@ type productRepository struct {
 }
 
 func NewProductRepository(db domain.DB) domain.ProductRepository {
-	count, err := db.Prepare("SELECT COUNT(*) FROM products")
-	if err != nil {
-		Log.Panicw("failed to prepare a named count select statement", "err", err)
+	return &productRepository{
+		db:         db,
+		count:      db.Prepare("SELECT COUNT(*) FROM products"),
+		selectList: db.Prepare("SELECT * FROM products WHERE deleted_at IS NULL LIMIT :limit OFFSET :offset"),
+		selectID:   db.PrepareSelect("products", "id = :id"),
+		insert:     db.PrepareInsertStruct("products", &domain.Product{}),
+		update:     db.PrepareUpdateStruct("products", &domain.Product{}, "id = :id"),
+		delete:     db.PrepareSoftDelete("products", "id = :id"),
 	}
-	selectList, err := db.Prepare("SELECT * FROM products WHERE deleted_at IS NULL LIMIT :limit OFFSET :offset")
-	if err != nil {
-		Log.Panicw("failed to prepare a named select statement", "err", err)
-	}
-	selectID, err := db.PrepareSelect("products", "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named select statement", "err", err)
-	}
-	insert, err := db.PrepareInsertStruct("products", &domain.Product{})
-	if err != nil {
-		Log.Panicw("failed to prepare a named insert statement from structure", "err", err)
-	}
-	update, err := db.PrepareUpdateStruct("products", &domain.Product{}, "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named update statement from structure", "err", err)
-	}
-	delete, err := db.PrepareSoftDelete("products", "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named soft delete statement", "err", err)
-	}
-	return &productRepository{db, count, selectList, selectID, insert, update, delete}
 }
 
 func (pr *productRepository) Count() (res uint, err error) {

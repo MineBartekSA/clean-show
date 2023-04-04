@@ -44,10 +44,9 @@ func NewSqlDB() domain.DB {
 		type INT NOT NULL,
 		email VARCHAR(320) NOT NULL,
 		hash TEXT NOT NULL,
-		salt TEXT NOT NULL,
 		name TEXT NOT NULL,
 		surname TEXT NOT NULL
-	`, "UNIQUE email") // TODO: Change hash and salt to VARCHAR // namd and surname should also be VARCHAR
+	`, "UNIQUE email") // TODO: Change hash VARCHAR // namd and surname should also be VARCHAR
 	createTable(db, "products", `
 		status INT NOT NULL,
 		name TEXT NOT NULL,
@@ -89,7 +88,7 @@ func (db *sqldb) PrepareStruct(arg any) any { // TODO: Maybe do this automaticly
 	return arg
 }
 
-func (db *sqldb) PrepareInsertStruct(table string, arg any) (domain.Stmt, error) {
+func (db *sqldb) PrepareInsertStruct(table string, arg any) domain.Stmt {
 	cols := getStructureKeys(arg)
 	sql := ""
 	if config.Env.DBDriver == "mysql" {
@@ -97,19 +96,27 @@ func (db *sqldb) PrepareInsertStruct(table string, arg any) (domain.Stmt, error)
 	} else {
 		sql = fmt.Sprintf("INSERT INTO %s (%s) VALUES (:%s) RETURNING id", table, strings.Join(cols, ", "), strings.Join(cols, ", :"))
 	}
-	return db.Prepare(sql)
+	stmt, err := db.innerPrepare(sql)
+	if err != nil {
+		Log.Panicw("failed to prepare a named insert statement", "statement", sql, "err", err)
+	}
+	return stmt
 }
 
-func (db *sqldb) PrepareSelect(table string, where string) (domain.Stmt, error) {
+func (db *sqldb) PrepareSelect(table string, where string) domain.Stmt {
 	if where != "" {
 		where += " AND "
 	}
 	where += "deleted_at IS NULL"
 	sql := fmt.Sprintf("SELECT * FROM %s WHERE %s", table, where)
-	return db.Prepare(sql)
+	stmt, err := db.innerPrepare(sql)
+	if err != nil {
+		Log.Panicw("failed to prepare a named select statement", "statement", sql, "err", err)
+	}
+	return stmt
 }
 
-func (db *sqldb) PrepareUpdateStruct(table string, arg any, where string) (domain.Stmt, error) {
+func (db *sqldb) PrepareUpdateStruct(table string, arg any, where string) domain.Stmt {
 	cols := getStructureKeys(arg)
 	set := ""
 	for _, col := range cols {
@@ -118,21 +125,37 @@ func (db *sqldb) PrepareUpdateStruct(table string, arg any, where string) (domai
 	return db.PrepareUpdate(table, set[:len(set)-2], where)
 }
 
-func (db *sqldb) PrepareUpdate(table, set, where string) (domain.Stmt, error) {
+func (db *sqldb) PrepareUpdate(table, set, where string) domain.Stmt {
 	if set != "" {
 		set += ", "
 	}
 	set += "updated_at = " + domain.DBNow()
 	sql := fmt.Sprintf("UPDATE %s SET %s WHERE %s", table, set, where)
-	return db.Prepare(sql)
+	stmt, err := db.innerPrepare(sql)
+	if err != nil {
+		Log.Panicw("failed to prepare a named update statement", "statement", sql, "err", err)
+	}
+	return stmt
 }
 
-func (db *sqldb) PrepareSoftDelete(table string, where string) (domain.Stmt, error) {
+func (db *sqldb) PrepareSoftDelete(table string, where string) domain.Stmt {
 	sql := fmt.Sprintf("UPDATE %s SET deleted_at = %s WHERE %s", table, domain.DBNow(), where)
-	return db.Prepare(sql)
+	stmt, err := db.innerPrepare(sql)
+	if err != nil {
+		Log.Panicw("failed to prepare a named soft delete statement", "statement", sql, "err", err)
+	}
+	return stmt
 }
 
-func (db *sqldb) Prepare(query string) (domain.Stmt, error) {
+func (db *sqldb) Prepare(query string) domain.Stmt {
+	stmt, err := db.innerPrepare(query)
+	if err != nil {
+		Log.Panicw("failed to prepare a named statement", "statement", query, "err", err)
+	}
+	return stmt
+}
+
+func (db *sqldb) innerPrepare(query string) (domain.Stmt, error) {
 	Log.Debugf("Preparing: '%s'", query)
 	return db.PrepareNamed(query)
 }
@@ -163,7 +186,7 @@ func (tx *sqltx) Stmt(stmt domain.Stmt) domain.Stmt {
 
 // Utils
 
-func getStructureKeys(arg any) []string { // TODO: Test
+func getStructureKeys(arg any) []string {
 	val := reflect.ValueOf(arg)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
@@ -281,7 +304,7 @@ func createTable(db *sqlx.DB, table, columns string, indexes ...string) {
 	} else {
 		sql += "id INTEGER PRIMARY KEY, " // Unknown SQL databse, defulting to just making id the primary key
 	}
-	sql += "created_at DATETIME NOT NULL DEFAULT " + now + ", " // TODO: Test for SQLite
+	sql += "created_at DATETIME NOT NULL DEFAULT " + now + ", "
 	sql += "updated_at DATETIME NOT NULL DEFAULT " + now + ", "
 	sql += "deleted_at DATETIME, "
 	sql += columns

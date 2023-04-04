@@ -17,7 +17,52 @@ func NewAccountController(usecase domain.AccountUsecase) domain.AccountControlle
 
 func (ac *accountController) Register(router domain.Router) {
 	a := router.API().Group("/account")
+	a.POST("/register", ac.PostRegister, domain.AuthLevelNone)
+	a.POST("/login", ac.PostLogin, domain.AuthLevelNone)
+	a.GET("/logout", ac.GetLogout, domain.AuthLevelUser)
 	a.GET("/:id", ac.GetByID, domain.AuthLevelUser)
+	a.PATCH("/:id", ac.Patch, domain.AuthLevelUser)
+	a.GET("/:id/orders", ac.GetOrders, domain.AuthLevelUser)
+	a.POST("/:id/password", ac.PostPassword, domain.AuthLevelUser)
+	a.DELETE("/:id", ac.Delete, domain.AuthLevelUser)
+}
+
+func (ac *accountController) PostLogin(context domain.Context, session domain.UserSession) {
+	var login domain.AccountLogin
+	err := context.UnmarshalBody(&login)
+	if err != nil {
+		context.Status(http.StatusBadRequest) // TODO: Better errors
+		return
+	}
+	account, token, err := ac.usecase.Login(&login)
+	if err != nil {
+		context.Status(http.StatusUnauthorized) // TODO: Better errors
+		return
+	}
+	context.SetCookie("token", token, 0, "", "", true, true)
+	context.JSON(http.StatusOK, struct {
+		ID    uint   `json:"id"`
+		Token string `json:"token"`
+	}{account.ID, token})
+}
+
+func (ac *accountController) PostRegister(context domain.Context, session domain.UserSession) {
+	var register domain.AccountCreate
+	err := context.UnmarshalBody(&register)
+	if err != nil {
+		context.Status(http.StatusBadRequest) // TODO: Better errors
+		return
+	}
+	account, token, err := ac.usecase.Register(&register)
+	if err != nil {
+		context.Status(http.StatusUnauthorized) // TODO: Better errors
+		return
+	}
+	context.SetCookie("token", token, 0, "", "", true, true)
+	context.JSON(http.StatusOK, struct {
+		ID    uint   `json:"id"`
+		Token string `json:"token"`
+	}{account.ID, token})
 }
 
 func (ac *accountController) GetByID(context domain.Context, session domain.UserSession) {
@@ -44,4 +89,85 @@ func (ac *accountController) GetByID(context domain.Context, session domain.User
 			*domain.Account
 		}{account.ID, account},
 	)
+}
+
+func (ac *accountController) Patch(context domain.Context, session domain.UserSession) {
+	rawId := context.Param("id")
+	id, err := strconv.ParseUint(rawId, 10, 64)
+	if err != nil {
+		context.Status(http.StatusNotFound) // TODO: Better error
+		return
+	}
+	var data map[string]any
+	err = context.UnmarshalBody(&data)
+	if err != nil {
+		context.Status(http.StatusInternalServerError) // TODO: Better error
+		return
+	}
+	err = ac.usecase.Modify(session, uint(id), data)
+	if err != nil {
+		context.Status(http.StatusInternalServerError) // TODO: Better error
+		return
+	}
+	context.Status(http.StatusNoContent)
+}
+
+func (ac *accountController) GetOrders(context domain.Context, session domain.UserSession) {
+	rawId := context.Param("id")
+	id, err := strconv.ParseUint(rawId, 10, 64)
+	if err != nil {
+		context.Status(http.StatusNotFound) // TODO: Better error
+		return
+	}
+	orders, err := ac.usecase.FetchOrders(session, uint(id)) // TODO: Add paging
+	if err != nil {
+		context.Status(http.StatusInternalServerError)
+		return
+	}
+	context.JSON(http.StatusOK, orders)
+}
+
+func (ac *accountController) PostPassword(context domain.Context, session domain.UserSession) {
+	rawId := context.Param("id")
+	id, err := strconv.ParseUint(rawId, 10, 64)
+	if err != nil {
+		context.Status(http.StatusNotFound) // TODO: Better error
+		return
+	}
+	var login domain.AccountLogin
+	err = context.UnmarshalBody(&login)
+	if err != nil {
+		context.Status(http.StatusBadRequest)
+		return
+	}
+	err = ac.usecase.ModifyPassword(session, uint(id), login.Password)
+	if err != nil {
+		context.Status(http.StatusInternalServerError)
+		return
+	}
+	context.Status(http.StatusNoContent)
+}
+
+func (ac *accountController) GetLogout(context domain.Context, session domain.UserSession) {
+	err := ac.usecase.Logout(session)
+	if err != nil {
+		context.Status(http.StatusInternalServerError) // TODO: Better error
+		return
+	}
+	context.Status(http.StatusNoContent)
+}
+
+func (ac *accountController) Delete(context domain.Context, session domain.UserSession) {
+	rawId := context.Param("id")
+	id, err := strconv.ParseUint(rawId, 10, 64)
+	if err != nil {
+		context.Status(http.StatusNotFound) // TODO: Better error
+		return
+	}
+	err = ac.usecase.Remove(session, uint(id))
+	if err != nil {
+		context.Status(http.StatusInternalServerError) // TODO: Better error
+		return
+	}
+	context.Status(http.StatusNoContent)
 }

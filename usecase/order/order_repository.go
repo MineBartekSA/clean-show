@@ -3,46 +3,35 @@ package order
 import (
 	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
-	. "github.com/minebarteksa/clean-show/logger"
 )
 
 type orderRepository struct {
 	db domain.DB
 
-	count      domain.Stmt
-	selectList domain.Stmt
-	selectID   domain.Stmt
-	insert     domain.Stmt
-	update     domain.Stmt
-	delete     domain.Stmt
+	count         domain.Stmt
+	selectList    domain.Stmt
+	selectAccount domain.Stmt
+	selectID      domain.Stmt
+	selectOrderBy domain.Stmt
+	insert        domain.Stmt
+	update        domain.Stmt
+	updateStatus  domain.Stmt
+	delete        domain.Stmt
 }
 
 func NewOrderRepository(db domain.DB) domain.OrderRepository {
-	count, err := db.Prepare("SELECT COUNT(*) FROM orders")
-	if err != nil {
-		Log.Panicw("failed to prepare a named count select statement", "err", err)
+	return &orderRepository{
+		db:            db,
+		count:         db.Prepare("SELECT COUNT(*) FROM orders"),
+		selectList:    db.Prepare("SELECT * FROM orders WHERE deleted_at IS NULL ORDER BY id DESC LIMIT :limit OFFSET :offset"),
+		selectAccount: db.PrepareSelect("orders", "order_by = :account"),
+		selectID:      db.PrepareSelect("orders", "id = :id"),
+		selectOrderBy: db.Prepare("SELECT order_by FROM orders WHERE id = :id AND deleted_at IS NULL"),
+		insert:        db.PrepareInsertStruct("orders", &domain.Order{}),
+		update:        db.PrepareUpdateStruct("orders", &domain.Order{}, "id = :id"),
+		updateStatus:  db.PrepareUpdate("orders", "status = :status", "id = :id"),
+		delete:        db.PrepareSoftDelete("orders", "id = :id"),
 	}
-	selectList, err := db.Prepare("SELECT * FROM orders WHERE deleted_at IS NULL ORDER BY id DESC LIMIT :limit OFFSET :offset")
-	if err != nil {
-		Log.Panicw("failed to prepare a named select statement", "err", err)
-	}
-	selectID, err := db.PrepareSelect("orders", "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named select statement", "err", err)
-	}
-	insert, err := db.PrepareInsertStruct("orders", &domain.Order{})
-	if err != nil {
-		Log.Panicw("failed to prepare a named insert statement from structure", "err", err)
-	}
-	update, err := db.PrepareUpdateStruct("orders", &domain.Order{}, "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named update statement from structure", "err", err)
-	}
-	delete, err := db.PrepareSoftDelete("orders", "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named soft delete statement", "err", err)
-	}
-	return &orderRepository{db, count, selectList, selectID, insert, update, delete}
 }
 
 func (or *orderRepository) Count() (res uint, err error) {
@@ -56,10 +45,22 @@ func (or *orderRepository) Select(limit, page int) ([]domain.Order, error) {
 	return res, err
 }
 
+func (or *orderRepository) SelectAccount(accountId uint) ([]domain.Order, error) {
+	res := []domain.Order{}
+	err := or.selectAccount.Select(&res, domain.H{"account": accountId})
+	return res, err
+}
+
 func (or *orderRepository) SelectID(id uint) (*domain.Order, error) {
 	var order domain.Order
 	err := or.selectID.Get(&order, domain.H{"id": id})
 	return &order, err
+}
+
+func (or *orderRepository) SelectOrderBy(orderId uint) (uint, error) {
+	var by uint
+	err := or.selectOrderBy.Get(&by, domain.H{"id": orderId})
+	return by, err
 }
 
 func (or *orderRepository) Insert(order *domain.Order) error {
@@ -85,6 +86,11 @@ func (or *orderRepository) Insert(order *domain.Order) error {
 
 func (or *orderRepository) Update(order *domain.Order) error {
 	_, err := or.update.Exec(order)
+	return err
+}
+
+func (or *orderRepository) UpdateStatus(orderId uint, status domain.OrderStatus) error {
+	_, err := or.updateStatus.Exec(domain.H{"id": orderId, "status": status})
 	return err
 }
 

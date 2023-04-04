@@ -8,6 +8,7 @@ import (
 	"github.com/dimiro1/banner"
 	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/infrastructure/database"
+	"github.com/minebarteksa/clean-show/infrastructure/security"
 	"github.com/minebarteksa/clean-show/logger"
 	"github.com/minebarteksa/clean-show/registry"
 )
@@ -29,7 +30,9 @@ func main() {
 	db := database.NewSqlDB()
 	logger.Log.Infow("Connected to the SQL Database")
 
-	r := registry.NewRegistry(db)
+	hasher := security.NewArgon2idHasher()
+
+	r := registry.NewRegistry(db, hasher)
 	r.Start()
 }
 

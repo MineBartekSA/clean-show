@@ -5,36 +5,27 @@ import (
 
 	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
-	. "github.com/minebarteksa/clean-show/logger"
 )
 
 type sessionRespository struct {
 	db domain.DB
 
-	tokenSelect domain.Stmt
-	insert      domain.Stmt
-	update      domain.Stmt
-	delete      domain.Stmt
+	tokenSelect   domain.Stmt
+	insert        domain.Stmt
+	update        domain.Stmt
+	delete        domain.Stmt
+	deleteAccount domain.Stmt
 }
 
 func NewSessionRepository(db domain.DB) domain.SessionRepository {
-	tokenSelect, err := db.PrepareSelect("sessions", "updated_at > "+domain.DBInterval(domain.DBNow(), time.Minute*-30)+" AND token = :token")
-	if err != nil {
-		Log.Panicw("failed to prepare a named select statement", "err", err)
+	return &sessionRespository{
+		db:            db,
+		tokenSelect:   db.PrepareSelect("sessions", "updated_at > "+domain.DBInterval(domain.DBNow(), time.Minute*-30)+" AND token = :token"),
+		insert:        db.PrepareInsertStruct("sessions", &domain.Session{}),
+		update:        db.PrepareUpdate("sessions", "", "id = :id"),
+		delete:        db.PrepareSoftDelete("sessions", "id = :id"),
+		deleteAccount: db.PrepareSoftDelete("sessions", "account_id = :account"),
 	}
-	insert, err := db.PrepareInsertStruct("sessions", &domain.Session{})
-	if err != nil {
-		Log.Panicw("failed to prepare a named insert statement from a structure", "err", err)
-	}
-	update, err := db.PrepareUpdate("sessions", "", "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named update statement", "err", err)
-	}
-	delete, err := db.PrepareSoftDelete("sessions", "id = :id")
-	if err != nil {
-		Log.Panicw("failed to prepare a named soft delete statement", "err", err)
-	}
-	return &sessionRespository{db, tokenSelect, insert, update, delete}
 }
 
 func (sr *sessionRespository) SelectByToken(token string) (*domain.Session, error) {
@@ -64,12 +55,17 @@ func (sr *sessionRespository) Insert(session *domain.Session) error {
 	return err
 }
 
-func (sr *sessionRespository) Extend(session_id uint) error {
-	_, err := sr.update.Exec(domain.H{"id": session_id})
+func (sr *sessionRespository) Extend(sessionId uint) error {
+	_, err := sr.update.Exec(domain.H{"id": sessionId})
 	return err
 }
 
-func (sr *sessionRespository) Delete(session_id uint) error {
-	_, err := sr.delete.Exec(domain.H{"id": session_id})
+func (sr *sessionRespository) Delete(sessionId uint) error {
+	_, err := sr.delete.Exec(domain.H{"id": sessionId})
+	return err
+}
+
+func (sr *sessionRespository) DeleteByAccount(acountId uint) error {
+	_, err := sr.deleteAccount.Exec(domain.H{"account": acountId})
 	return err
 }

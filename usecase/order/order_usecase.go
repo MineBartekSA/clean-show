@@ -36,6 +36,10 @@ func (ou *orderUsecase) Fetch(limit, page int) ([]domain.Order, error) {
 	return list, nil
 }
 
+func (ou *orderUsecase) FetchByAccount(accountId uint) ([]domain.Order, error) {
+	return ou.repository.SelectAccount(accountId)
+}
+
 func (ou *orderUsecase) Create(accountId uint, create *domain.OrderCreate) (*domain.Order, error) {
 	order := create.ToOrder(accountId)
 	err := ou.repository.Insert(order)
@@ -61,36 +65,11 @@ func (ou *orderUsecase) FetchByID(session domain.UserSession, id uint) (*domain.
 }
 
 func (ou *orderUsecase) Modify(accountId, orderId uint, data map[string]any) error {
-	return ou.update(accountId, orderId, func(order *domain.Order) error {
-		return usecase.PatchModel(order, data)
-	})
-}
-
-func (ou *orderUsecase) Cancel(session domain.UserSession, orderId uint) error {
-	aid := session.GetAccountID()
-	return ou.update(aid, orderId, func(order *domain.Order) error {
-		if !session.IsStaff() && aid != order.OrderBy {
-			return fmt.Errorf("only staff users can cancel other users orders")
-		}
-		order.Status = domain.OrderStatusCanceled
-		return nil
-	})
-}
-
-func (ou *orderUsecase) Delete(accountId, orderId uint) error {
-	err := ou.repository.Delete(orderId)
-	if err != nil {
-		return err
-	}
-	return ou.audit.Deletion(accountId, orderId)
-}
-
-func (ou *orderUsecase) update(accountId, orderId uint, mod func(order *domain.Order) error) error {
 	order, err := ou.repository.SelectID(orderId)
 	if err != nil {
 		return err
 	}
-	err = mod(order)
+	err = usecase.PatchModel(order, data)
 	if err != nil {
 		return err
 	}
@@ -99,4 +78,49 @@ func (ou *orderUsecase) update(accountId, orderId uint, mod func(order *domain.O
 		return err
 	}
 	return ou.audit.Modification(accountId, orderId)
+}
+
+func (ou *orderUsecase) Cancel(session domain.UserSession, orderId uint) error {
+	aid := session.GetAccountID()
+	orderBy, err := ou.repository.SelectOrderBy(orderId)
+	if err != nil {
+		return err
+	}
+	if !session.IsStaff() && aid != orderBy {
+		return fmt.Errorf("only staff users can cancel other users orders")
+	}
+	err = ou.repository.UpdateStatus(orderId, domain.OrderStatusCanceled)
+	if err != nil {
+		return err
+	}
+	return ou.audit.Modification(aid, orderId)
+}
+
+func (ou *orderUsecase) CancelByAccount(executorId, accountId uint) error {
+	orders, err := ou.repository.SelectAccount(accountId)
+	if err != nil {
+		return err
+	}
+	for _, order := range orders { // TODO: Batch?
+		if order.Status == domain.OrderStatusCompleted || order.Status == domain.OrderStatusCanceled {
+			continue
+		}
+		err = ou.repository.UpdateStatus(order.ID, domain.OrderStatusCanceled)
+		if err != nil {
+			return err
+		}
+		err = ou.audit.Modification(executorId, order.ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (ou *orderUsecase) Remove(accountId, orderId uint) error {
+	err := ou.repository.Delete(orderId)
+	if err != nil {
+		return err
+	}
+	return ou.audit.Deletion(accountId, orderId)
 }

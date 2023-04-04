@@ -1,7 +1,11 @@
 package session
 
 import (
-	"github.com/dchest/uniuri"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/binary"
+	"time"
+
 	"github.com/minebarteksa/clean-show/domain"
 )
 
@@ -31,11 +35,21 @@ func (su *sessionUsecase) Fetch(token string) (*domain.Session, error) {
 }
 
 func (su *sessionUsecase) Create(account_id uint) (*domain.Session, error) {
+	buffer := make([]byte, 128)
+	_, err := rand.Read(buffer)
+	if err != nil {
+		return nil, err
+	}
+	randString := base64.URLEncoding.EncodeToString(buffer)
+	buffer = make([]byte, 8)
+	binary.LittleEndian.AppendUint64(buffer, uint64(time.Now().UTC().UnixMilli()))
+	token := base64.URLEncoding.EncodeToString(buffer) + "."
+	token += randString[:128-len(token)]
 	session := domain.Session{
 		AccountID: account_id,
-		Token:     uniuri.NewLen(128),
+		Token:     token,
 	}
-	err := su.repository.Insert(&session)
+	err = su.repository.Insert(&session)
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +65,13 @@ func (su *sessionUsecase) Invalidate(session *domain.Session) error {
 	if err != nil {
 		return err
 	}
-	err = su.audit.Deletion(session.AccountID, session.ID)
+	return su.audit.Deletion(session.AccountID, session.ID)
+}
+
+func (su *sessionUsecase) InvalidateAccount(executorId, accountId uint) error {
+	err := su.repository.DeleteByAccount(accountId)
 	if err != nil {
 		return err
 	}
-	return nil
+	return su.audit.Deletion(executorId, 0)
 }
