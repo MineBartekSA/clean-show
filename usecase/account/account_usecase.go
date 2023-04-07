@@ -49,6 +49,7 @@ func (au *accountUsecase) Register(register *domain.AccountCreate) (*domain.Acco
 		Surname: register.Surname,
 	}
 
+	// TODO: password must be at least 8 characters long with .......
 	account.Hash = au.hasher.Hash(register.Password)
 
 	err := au.repository.Insert(&account)
@@ -78,7 +79,7 @@ func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, dat
 	if !session.IsStaff() && session.GetAccountID() != accountId {
 		return domain.Fatal(domain.ErrUnauthorized, "only staff users can modify other accounts information").Call()
 	}
-	account, err := au.repository.SelectID(accountId, false)
+	account, err := au.repository.SelectID(accountId, false) // TODO: Is this necessary??? It isn't if requesting the same account as the authenticated
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func (au *accountUsecase) ModifyPassword(session domain.UserSession, accountId u
 	if err != nil {
 		return err
 	}
-	return au.audit.Modification(aid, accountId)
+	return au.auditPassword.Modification(aid, accountId)
 }
 
 func (au *accountUsecase) Logout(session domain.UserSession) error {

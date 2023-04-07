@@ -6,10 +6,11 @@ import (
 
 	"github.com/common-nighthawk/go-figure"
 	"github.com/dimiro1/banner"
+	"github.com/jmoiron/sqlx"
 	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/infrastructure/database"
 	"github.com/minebarteksa/clean-show/infrastructure/security"
-	"github.com/minebarteksa/clean-show/logger"
+	. "github.com/minebarteksa/clean-show/logger"
 	"github.com/minebarteksa/clean-show/registry"
 )
 
@@ -21,18 +22,27 @@ func main() {
 	figure.NewColorFigure("Go Clean Show", "", "green", true).Print()
 	banner.Init(os.Stdout, true, true, bytes.NewBufferString(bannerContent))
 
-	logger.InitProduction()
+	InitProduction()
 	if config.Env.Debug {
-		logger.InitDebug()
-		logger.Log.Infow("Running in Debug")
+		InitDebug()
+		Log.Infow("Running in Debug")
 	}
 
-	db := database.NewSqlDB()
-	logger.Log.Infow("Connected to the SQL Database")
+	db, err := sqlx.Connect(config.Env.DBDriver, config.Env.DBSource)
+	if err != nil {
+		Log.Fatalw("failed to connect to the database", "err", err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		Log.Fatalw("failed to ping databse", "err", err)
+	}
+	sql := database.NewSqlDB(db)
+	Log.Infow("Connected to the SQL Database")
 
 	hasher := security.NewArgon2idHasher()
 
-	r := registry.NewRegistry(db, hasher)
+	r := registry.NewRegistry(sql, hasher)
 	r.Start()
 }
 

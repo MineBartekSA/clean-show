@@ -27,14 +27,14 @@ func (ac *accountController) Register(router domain.Router) {
 	a.DELETE("/:id", ac.Delete, domain.AuthLevelUser)
 }
 
-func (ac *accountController) PostLogin(context domain.Context, session domain.UserSession) {
-	var login domain.AccountLogin
-	err := context.UnmarshalBody(&login)
+func (ac *accountController) PostRegister(context domain.Context, session domain.UserSession) {
+	var register domain.AccountCreate
+	err := context.UnmarshalBody(&register)
 	if err != nil {
 		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
-	account, token, err := ac.usecase.Login(&login)
+	account, token, err := ac.usecase.Register(&register)
 	if err != nil {
 		context.Error(err)
 		return
@@ -46,14 +46,14 @@ func (ac *accountController) PostLogin(context domain.Context, session domain.Us
 	}{account.ID, token})
 }
 
-func (ac *accountController) PostRegister(context domain.Context, session domain.UserSession) {
-	var register domain.AccountCreate
-	err := context.UnmarshalBody(&register)
+func (ac *accountController) PostLogin(context domain.Context, session domain.UserSession) {
+	var login domain.AccountLogin
+	err := context.UnmarshalBody(&login)
 	if err != nil {
 		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
-	account, token, err := ac.usecase.Register(&register)
+	account, token, err := ac.usecase.Login(&login)
 	if err != nil {
 		context.Error(err)
 		return

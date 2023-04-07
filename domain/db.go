@@ -45,24 +45,6 @@ type DB interface {
 	Transaction(func(tx Tx) error) error
 }
 
-// type DBStringArray []string // TODO: Maybe delete
-
-// func (sa *DBStringArray) Scan(val any) error {
-// 	switch v := val.(type) {
-// 	case []byte:
-// 		*sa = strings.Split(string(v), ";")
-// 	case string:
-// 		*sa = strings.Split(v, ";")
-// 	default:
-// 		return errors.New(fmt.Sprintf("Unsupported type: %T", v))
-// 	}
-// 	return nil
-// }
-
-// func (sa DBStringArray) Value() (driver.Value, error) {
-// 	return strings.Join(sa, ";"), nil
-// }
-
 type FromString interface {
 	FromString(string)
 }
@@ -85,10 +67,10 @@ func (a *DBArray[T]) Scan(val any) error {
 	return nil
 }
 
-func fromString[T any](in string) T { // TODO: Verify
+func fromString[T any](in string) T {
 	var a T
 	val := reflect.ValueOf(&a)
-	if val.Elem().Type().Implements(reflect.TypeOf((*FromString)(nil)).Elem()) {
+	if val.Type().Implements(reflect.TypeOf((*FromString)(nil)).Elem()) {
 		val.MethodByName("FromString").Call([]reflect.Value{reflect.ValueOf(in)})
 		return a
 	} else if val.Elem().Kind() == reflect.String {

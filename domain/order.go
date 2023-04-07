@@ -15,7 +15,7 @@ type Order struct {
 	InvoiceAddress  string                `db:"invoice_address" json:"invoice_address"`
 	Products        DBArray[ProductOrder] `db:"products" json:"products"`
 	ShippingPrice   float64               `db:"shipping_price" json:"shipping_price"`
-	Total           float64               `db:"total" json:"total"`
+	Total           float64               `db:"total" json:"total" patch:"-"`
 }
 
 type OrderStatus int
@@ -36,6 +36,9 @@ type ProductOrder struct {
 }
 
 func (po *ProductOrder) FromString(in string) {
+	if in == "" {
+		return
+	}
 	split := strings.SplitN(in, ",", 3)
 	if len(split) != 3 {
 		log.Panicf("string '%s' is not a ProductOrder", in)
@@ -85,6 +88,7 @@ func (oc *OrderCreate) ToOrder(orderBy uint) *Order {
 	}
 }
 
+//go:generate mockery --name OrderController
 type OrderController interface {
 	Register(router Router)
 	Get(context Context, session UserSession)
@@ -95,6 +99,7 @@ type OrderController interface {
 	Delete(context Context, session UserSession)
 }
 
+//go:generate mockery --name OrderUsecase
 type OrderUsecase interface {
 	TotalCount() (uint, error)
 	Fetch(limit, page int) ([]Order, error)
@@ -107,6 +112,7 @@ type OrderUsecase interface {
 	Remove(accountId, orderId uint) error
 }
 
+//go:generate mockery --name OrderRepository
 type OrderRepository interface {
 	Count() (uint, error)
 	Select(limit, page int) ([]Order, error)

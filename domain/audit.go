@@ -26,12 +26,14 @@ const (
 	ResourceTypeSession
 )
 
+//go:generate mockery --name AuditResource
 type AuditResource interface {
 	Creation(executor uint, res_id uint) error
 	Modification(executor uint, res_id uint) error
 	Deletion(executor uint, res_id uint) error
 }
 
+//go:generate mockery --name AuditUsecase
 type AuditUsecase interface {
 	Create(entry_type EntryType, resource_type ResourceType, resource_id uint, executor uint) error
 
@@ -42,6 +44,7 @@ type AuditUsecase interface {
 	Resource(resource_type ResourceType) AuditResource
 }
 
+//go:generate mockery --name AuditRepository
 type AuditRepository interface {
 	Insert(entry AuditEntry) error
 }

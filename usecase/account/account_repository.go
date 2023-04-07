@@ -67,7 +67,7 @@ func (ar *accountRepository) Insert(account *domain.Account) error {
 	return domain.SQLError(err)
 }
 
-func (ar *accountRepository) Update(account *domain.Account) error {
+func (ar *accountRepository) Update(account *domain.Account) error { // TODO: Hash specific Update method?
 	_, err := ar.update.Exec(account)
 	return domain.SQLError(err)
 }

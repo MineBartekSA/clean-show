@@ -20,17 +20,7 @@ type sqldb struct {
 	*sqlx.DB
 }
 
-func NewSqlDB() domain.DB {
-	db, err := sqlx.Connect(config.Env.DBDriver, config.Env.DBSource)
-	if err != nil {
-		Log.Fatalw("failed to connect to the database", "err", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		Log.Fatalw("failed to ping databse", "err", err)
-	}
-
+func NewSqlDB(db *sqlx.DB) domain.DB {
 	createTable(db, "audit_log", `
 		type INT NOT NULL,
 		resource_type INT NOT NULL,

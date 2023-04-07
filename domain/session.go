@@ -14,6 +14,7 @@ type UserSession interface {
 	IsStaff() bool
 }
 
+//go:generate mockery --name SessionUsecase
 type SessionUsecase interface {
 	Fetch(token string) (*Session, error)
 	Create(account_id uint) (*Session, error)
@@ -21,6 +22,7 @@ type SessionUsecase interface {
 	InvalidateAccount(executorId, accountId uint) error
 }
 
+//go:generate mockery --name SessionRepository
 type SessionRepository interface {
 	SelectByToken(token string) (*Session, error)
 	Insert(session *Session) error

@@ -18,10 +18,17 @@ func PatchModel(model any, data map[string]any) error { // TODO: Test
 	if val.Kind() != reflect.Struct {
 		return fmt.Errorf("not a struct")
 	}
+	dbm := reflect.TypeOf(domain.DBModel{})
+	if val.Type() == dbm {
+		return fmt.Errorf("DBModel can not be patched")
+	}
 	max := val.NumField()
 	for i := 0; i < max; i += 1 {
 		t := val.Type().Field(i)
-		key := strings.ToLower(t.Name)
+		if t.Type == dbm {
+			continue
+		}
+		key := t.Name
 		if tag, ok := t.Tag.Lookup("json"); ok {
 			new := strings.SplitN(tag, ",", 2)[0]
 			if new != "" {

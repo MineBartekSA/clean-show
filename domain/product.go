@@ -17,6 +17,7 @@ const (
 	ProductStatusDiscontinued
 )
 
+//go:generate mockery --name ProductController
 type ProductController interface {
 	Register(router Router)
 	Get(context Context, session UserSession)
@@ -26,6 +27,7 @@ type ProductController interface {
 	Delete(context Context, session UserSession)
 }
 
+//go:generate mockery --name ProductUsecase
 type ProductUsecase interface {
 	TotalCount() (uint, error)
 	Fetch(limit, page int) ([]Product, error)
@@ -35,6 +37,7 @@ type ProductUsecase interface {
 	Remove(accountId, productId uint) error
 }
 
+//go:generate mockery --name ProductRepository
 type ProductRepository interface {
 	Count() (uint, error)
 	Select(limit, page int) ([]Product, error)

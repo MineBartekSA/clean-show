@@ -50,7 +50,7 @@ func (sr *sessionRespository) Insert(session *domain.Session) error {
 			return nil
 		})
 	} else {
-		err = sr.insert.Get(&session, session)
+		err = sr.insert.Get(session, session)
 	}
 	return domain.SQLError(err)
 }

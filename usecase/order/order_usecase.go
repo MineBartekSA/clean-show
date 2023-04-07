@@ -71,6 +71,7 @@ func (ou *orderUsecase) Modify(accountId, orderId uint, data map[string]any) err
 	if err != nil {
 		return err
 	}
+	// TODO: Update total
 	err = ou.repository.Update(order)
 	if err != nil {
 		return err

@@ -27,6 +27,7 @@ type AccountCreate struct {
 	Surname string `json:"surname"`
 }
 
+//go:generate mockery --name AccountController
 type AccountController interface {
 	Register(router Router)
 	PostLogin(context Context, session UserSession)
@@ -39,6 +40,7 @@ type AccountController interface {
 	Delete(context Context, session UserSession)
 }
 
+//go:generate mockery --name AccountUsecase
 type AccountUsecase interface {
 	Login(login *AccountLogin) (*Account, string, error)
 	Register(register *AccountCreate) (*Account, string, error)
@@ -51,6 +53,7 @@ type AccountUsecase interface {
 	Remove(session UserSession, accountId uint) error
 }
 
+//go:generate mockery --name AccountRepository
 type AccountRepository interface {
 	SelectEMail(email string) (*Account, error)
 	SelectID(id uint, full bool) (*Account, error)

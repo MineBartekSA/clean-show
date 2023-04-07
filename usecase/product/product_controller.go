@@ -1,7 +1,6 @@
 package product
 
 import (
-	"math"
 	"net/http"
 	"strconv"
 
@@ -40,7 +39,10 @@ func (pc *productController) Get(context domain.Context, session domain.UserSess
 	}
 	pages := float64(0)
 	if limit > 0 {
-		pages = math.RoundToEven(float64(count) / float64(limit))
+		pages = float64(count) / float64(limit)
+		if pages > float64(int(pages)) {
+			pages += 1
+		}
 	}
 	if pages < 0 {
 		pages = 0
