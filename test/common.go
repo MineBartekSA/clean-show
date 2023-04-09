@@ -63,3 +63,17 @@ func NewAuditUsecase(t *testing.T, resource domain.ResourceType) (*mocks.AuditRe
 	mock.On("Resource", resource).Return(res)
 	return res, mock
 }
+
+func NewUserSession(id uint) *MockUserSession {
+	return &MockUserSession{
+		Authed: true,
+		Account: &domain.Account{
+			DBModel: domain.DBModel{ID: id},
+		},
+		Session: &domain.Session{
+			DBModel:   domain.DBModel{ID: 1},
+			AccountID: id,
+			Token:     "testToken123@",
+		},
+	}
+}

@@ -34,8 +34,16 @@ func (ou *orderUsecase) Fetch(limit, page int) ([]domain.Order, error) {
 	return list, nil
 }
 
-func (ou *orderUsecase) FetchByAccount(accountId uint) ([]domain.Order, error) {
-	return ou.repository.SelectAccount(accountId)
+func (ou *orderUsecase) FetchByAccount(accountId uint, limit, page int) ([]domain.Order, error) {
+	if limit < 0 {
+		limit = 0
+	} else if limit > 1000 {
+		limit = 1000
+	}
+	if page < 1 {
+		page = 1
+	}
+	return ou.repository.SelectAccount(accountId, limit, page)
 }
 
 func (ou *orderUsecase) Create(accountId uint, create *domain.OrderCreate) (*domain.Order, error) {
@@ -96,22 +104,24 @@ func (ou *orderUsecase) Cancel(session domain.UserSession, orderId uint) error {
 }
 
 func (ou *orderUsecase) CancelByAccount(executorId, accountId uint) error {
-	orders, err := ou.repository.SelectAccount(accountId)
+	orders, err := ou.repository.SelectAccount(accountId, 0, 0)
 	if err != nil {
 		return err
 	}
-	for _, order := range orders { // TODO: Batch?
+	var orderIds []uint
+	for _, order := range orders {
 		if order.Status == domain.OrderStatusCompleted || order.Status == domain.OrderStatusCanceled {
 			continue
 		}
-		err = ou.repository.UpdateStatus(order.ID, domain.OrderStatusCanceled)
-		if err != nil {
-			return err
-		}
-		err = ou.audit.Modification(executorId, order.ID)
-		if err != nil {
-			return err
-		}
+		orderIds = append(orderIds, order.ID)
+	}
+	err = ou.repository.BatchUpdateStatus(orderIds, domain.OrderStatusCanceled)
+	if err != nil {
+		return err
+	}
+	err = ou.audit.BatchModification(executorId, orderIds)
+	if err != nil {
+		return err
 	}
 	return nil
 }

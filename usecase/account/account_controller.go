@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/minebarteksa/clean-show/domain"
+	"github.com/minebarteksa/clean-show/usecase"
 )
 
 type accountController struct {
@@ -113,13 +114,14 @@ func (ac *accountController) Patch(context domain.Context, session domain.UserSe
 }
 
 func (ac *accountController) GetOrders(context domain.Context, session domain.UserSession) {
+	limit, page := usecase.GetLimitPage(context)
 	rawId := context.Param("id")
 	id, err := strconv.ParseUint(rawId, 10, 64)
 	if err != nil {
 		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
-	orders, err := ac.usecase.FetchOrders(session, uint(id)) // TODO: Add pageing
+	orders, err := ac.usecase.FetchOrders(session, uint(id), limit, page)
 	if err != nil {
 		context.Error(err)
 		return

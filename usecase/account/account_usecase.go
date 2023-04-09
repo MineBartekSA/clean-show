@@ -97,11 +97,11 @@ func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, dat
 	return au.audit.Modification(aid, accountId)
 }
 
-func (au *accountUsecase) FetchOrders(session domain.UserSession, accountId uint) ([]domain.Order, error) {
+func (au *accountUsecase) FetchOrders(session domain.UserSession, accountId uint, limit, page int) ([]domain.Order, error) {
 	if !session.IsStaff() && session.GetAccountID() != accountId {
 		return nil, domain.Fatal(domain.ErrUnauthorized, "only staff users can fetch other users orders").Call()
 	}
-	return au.order.FetchByAccount(accountId)
+	return au.order.FetchByAccount(accountId, limit, page)
 }
 
 func (au *accountUsecase) ModifyPassword(session domain.UserSession, accountId uint, new string) error {

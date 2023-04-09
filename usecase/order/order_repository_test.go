@@ -27,12 +27,14 @@ func NewRepository(t *testing.T) (domain.OrderRepository, sqlmock.Sqlmock, []*sq
 		preparedCache = []*sqlmock.ExpectedPrepare{
 			mock.ExpectPrepare("SELECT COUNT\\(\\*\\) FROM orders"),
 			mock.ExpectPrepare("SELECT \\* FROM orders WHERE deleted_at IS NULL ORDER BY id DESC LIMIT \\? OFFSET \\?"),
-			mock.ExpectPrepare("SELECT .* FROM orders WHERE order_by = \\? AND deleted_at IS NULL"),
+			mock.ExpectPrepare("SELECT \\* FROM orders WHERE order_by = \\? AND deleted_at IS NULL ORDER BY id DESC"),
+			mock.ExpectPrepare("SELECT \\* FROM orders WHERE order_by = \\? AND deleted_at IS NULL ORDER BY id DESC LIMIT \\? OFFSET \\?"),
 			mock.ExpectPrepare("SELECT .* FROM orders WHERE id = \\? AND deleted_at IS NULL"),
 			mock.ExpectPrepare("SELECT order_by FROM orders WHERE id = \\? AND deleted_at IS NULL"),
 			mock.ExpectPrepare("INSERT INTO orders \\(.*\\) VALUES \\(.*\\) RETURNING id"),
 			mock.ExpectPrepare("UPDATE orders SET .*, updated_at = NOW\\(\\) WHERE id = \\?"),
 			mock.ExpectPrepare("UPDATE orders SET status = \\?, updated_at = NOW\\(\\) WHERE id = \\?"),
+			mock.ExpectPrepare("UPDATE orders SET status = \\?, updated_at = NOW\\(\\) WHERE id IN \\(\\?\\)"),
 			mock.ExpectPrepare("UPDATE orders SET deleted_at = NOW\\(\\) WHERE id = \\?"),
 		}
 
@@ -136,9 +138,17 @@ func TestSelectAccount(t *testing.T) {
 	for _, order := range mockOrders {
 		rows.AddRow(order.ID, order.Status, order.OrderBy, order.ShippingAddress, order.InvoiceAddress, order.Products, order.ShippingPrice, order.Total)
 	}
-	prepared[2].ExpectQuery().WithArgs(7).WillReturnRows(rows)
+	rowsCopy := *rows
+	prepared[2].ExpectQuery().WithArgs(7).WillReturnRows(&rowsCopy)
 
-	orders, err := repository.SelectAccount(7)
+	orders, err := repository.SelectAccount(7, 0, 0)
+
+	assert.NoError(t, err)
+	assert.Equal(t, mockOrders, orders)
+
+	prepared[3].ExpectQuery().WithArgs(7, 5, 5).WillReturnRows(rows)
+
+	orders, err = repository.SelectAccount(7, 5, 2)
 
 	assert.NoError(t, err)
 	assert.Equal(t, mockOrders, orders)
@@ -150,7 +160,7 @@ func TestSelectID(t *testing.T) {
 	rows := test.NewRows("id", "status", "order_by", "shipping_address", "invoice_address", "products", "shipping_price", "total")
 	mockOrder := mockOrders[2]
 	rows.AddRow(mockOrder.ID, mockOrder.Status, mockOrder.OrderBy, mockOrder.ShippingAddress, mockOrder.InvoiceAddress, mockOrder.Products, mockOrder.ShippingPrice, mockOrder.Total)
-	prepared[3].ExpectQuery().WithArgs(3).WillReturnRows(rows)
+	prepared[4].ExpectQuery().WithArgs(3).WillReturnRows(rows)
 
 	order, err := repository.SelectID(3)
 
@@ -161,7 +171,7 @@ func TestSelectID(t *testing.T) {
 func TestSelectOrderBy(t *testing.T) {
 	repository, _, prepared := NewRepository(t)
 
-	prepared[4].ExpectQuery().WithArgs(3).WillReturnRows(test.NewRows("order_by").AddRow(1))
+	prepared[5].ExpectQuery().WithArgs(3).WillReturnRows(test.NewRows("order_by").AddRow(1))
 
 	ordered_by, err := repository.SelectOrderBy(3)
 
@@ -173,7 +183,7 @@ func TestInsert(t *testing.T) {
 	repository, _, prepared := NewRepository(t)
 	order := mockOrders[1]
 
-	prepared[5].ExpectQuery().
+	prepared[6].ExpectQuery().
 		WithArgs(order.Status, order.OrderBy, order.ShippingAddress, order.InvoiceAddress, order.Products, order.ShippingPrice, order.Total).
 		WillReturnRows(test.IDRow(1))
 
@@ -187,7 +197,7 @@ func TestUpdate(t *testing.T) {
 	repository, _, prepared := NewRepository(t)
 	order := mockOrders[0]
 
-	prepared[6].ExpectExec().
+	prepared[7].ExpectExec().
 		WithArgs(order.Status, order.OrderBy, order.ShippingAddress, order.InvoiceAddress, order.Products, order.ShippingPrice, order.Total, order.ID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
@@ -199,17 +209,27 @@ func TestUpdate(t *testing.T) {
 func TestUpdateStatus(t *testing.T) {
 	repository, _, prepared := NewRepository(t)
 
-	prepared[7].ExpectExec().WithArgs(domain.OrderStatusCompleted, 3).WillReturnResult(sqlmock.NewResult(0, 1))
+	prepared[8].ExpectExec().WithArgs(domain.OrderStatusCompleted, 3).WillReturnResult(sqlmock.NewResult(0, 1))
 
 	err := repository.UpdateStatus(3, domain.OrderStatusCompleted)
 
 	assert.NoError(t, err)
 }
 
-func TestDelete(t *testing.T) {
+func TestBatchUpdateStatus(t *testing.T) {
 	repository, _, prepared := NewRepository(t)
 
-	prepared[8].ExpectExec().WithArgs(3).WillReturnResult(sqlmock.NewResult(0, 1))
+	prepared[9].ExpectExec().WithArgs(domain.OrderStatusInRealisation, "1, 2").WillReturnResult(sqlmock.NewResult(0, 2))
+
+	err := repository.BatchUpdateStatus([]uint{1, 2}, domain.OrderStatusInRealisation)
+
+	assert.NoError(t, err)
+}
+
+func TestDeleteRepository(t *testing.T) {
+	repository, _, prepared := NewRepository(t)
+
+	prepared[10].ExpectExec().WithArgs(3).WillReturnResult(sqlmock.NewResult(0, 1))
 
 	err := repository.Delete(3)
 

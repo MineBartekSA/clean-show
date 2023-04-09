@@ -164,7 +164,7 @@ func TestUpdate(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestDelete(t *testing.T) {
+func TestDeleteRepository(t *testing.T) {
 	repository, _, prepared := NewRepository(t)
 
 	prepared[5].ExpectExec().WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 1))

@@ -21,3 +21,13 @@ func (ar *auditRepository) Insert(entry domain.AuditEntry) error {
 	_, err := ar.insert.Exec(&entry)
 	return domain.SQLError(err)
 }
+
+func (ar *auditRepository) BatchInsert(entries []domain.AuditEntry) error {
+	for _, entry := range entries {
+		_, err := ar.insert.Exec(&entry)
+		if err != nil {
+			return domain.SQLError(err)
+		}
+	}
+	return nil
+}

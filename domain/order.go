@@ -103,7 +103,7 @@ type OrderController interface {
 type OrderUsecase interface {
 	TotalCount() (uint, error)
 	Fetch(limit, page int) ([]Order, error)
-	FetchByAccount(accountId uint) ([]Order, error)
+	FetchByAccount(accountId uint, limit, page int) ([]Order, error)
 	Create(accountId uint, create *OrderCreate) (*Order, error)
 	FetchByID(session UserSession, id uint) (*Order, error)
 	Modify(accountId, orderId uint, data map[string]any) error
@@ -116,11 +116,12 @@ type OrderUsecase interface {
 type OrderRepository interface {
 	Count() (uint, error)
 	Select(limit, page int) ([]Order, error)
-	SelectAccount(accountId uint) ([]Order, error)
+	SelectAccount(accountId uint, limit, page int) ([]Order, error)
 	SelectID(id uint) (*Order, error)
 	SelectOrderBy(orderId uint) (uint, error)
 	Insert(order *Order) error
 	Update(order *Order) error
 	UpdateStatus(orderId uint, status OrderStatus) error
+	BatchUpdateStatus(orders []uint, status OrderStatus) error
 	Delete(id uint) error
 }

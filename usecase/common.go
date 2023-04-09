@@ -9,7 +9,7 @@ import (
 	"github.com/minebarteksa/clean-show/domain"
 )
 
-func PatchModel(model any, data map[string]any) error { // TODO: Test
+func PatchModel(model any, data map[string]any) error {
 	val := reflect.ValueOf(model)
 	if val.Kind() != reflect.Ptr {
 		return fmt.Errorf("not a pointer")

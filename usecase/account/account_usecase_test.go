@@ -185,9 +185,9 @@ func TestFetchOrders(t *testing.T) {
 		},
 	}
 
-	order.On("FetchByAccount", session.Account.ID).Return([]domain.Order{{}, {}, {}}, nil)
+	order.On("FetchByAccount", session.Account.ID, 5, 2).Return([]domain.Order{{}, {}, {}}, nil)
 
-	orders, err := usecase.FetchOrders(&session, uint(7))
+	orders, err := usecase.FetchOrders(&session, uint(7), 5, 2)
 
 	assert.NoError(t, err)
 	assert.Len(t, orders, 3)

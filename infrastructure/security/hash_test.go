@@ -11,7 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestArgon2idHasher(t *testing.T) { // TODO: Adjust params
+// Test hasher and make sure that execution time is within accepteable range
+// Execution time must be within: 0.5s - 1s range (+/- 50 ms)
+func TestArgon2idHasher(t *testing.T) {
 	logger.InitProduction()
 	hasher := security.NewArgon2idHasher()
 
@@ -23,17 +25,17 @@ func TestArgon2idHasher(t *testing.T) { // TODO: Adjust params
 		hash := hasher.Hash(password)
 		took := time.Since(start)
 		assert.NotEmpty(t, hash)
-		assert.Less(t, took, time.Second+100*time.Millisecond)
-		assert.Greater(t, took, 450*time.Millisecond)
-		logger.Log.Infoln("Hash took:", took)
+		assert.Less(t, took, time.Second+50*time.Millisecond)
+		assert.Greater(t, took, 500*time.Millisecond-50*time.Millisecond)
+		logger.Log.Infoln("Hash took: ", took)
 
 		start = time.Now()
 		verified, err := hasher.Verify(password, hash)
 		took = time.Since(start)
 		assert.NoError(t, err)
 		assert.True(t, verified)
-		assert.Less(t, took, time.Second+100*time.Millisecond)
-		assert.Greater(t, took, 450*time.Millisecond)
+		assert.Less(t, took, time.Second+50*time.Millisecond)
+		assert.Greater(t, took, 500*time.Millisecond-50*time.Millisecond)
 		logger.Log.Infoln("Verify took:", took)
 	}
 }

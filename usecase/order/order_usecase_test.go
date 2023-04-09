@@ -41,9 +41,9 @@ func TestFetchByAccount(t *testing.T) {
 	_, audit := test.NewAuditUsecase(t, domain.ResourceTypeOrder)
 	usecase := order.NewOrderUsecase(repository, audit)
 
-	repository.On("SelectAccount", uint(1)).Return([]domain.Order{{}, {}, {}}, nil)
+	repository.On("SelectAccount", uint(1), 5, 2).Return([]domain.Order{{}, {}, {}}, nil)
 
-	orders, err := usecase.FetchByAccount(1)
+	orders, err := usecase.FetchByAccount(1, 5, 2)
 
 	assert.NoError(t, err)
 	assert.Len(t, orders, 3)
@@ -154,14 +154,12 @@ func TestCancelByAccount(t *testing.T) {
 	resource, audit := test.NewAuditUsecase(t, domain.ResourceTypeOrder)
 	usecase := order.NewOrderUsecase(repository, audit)
 
-	repository.On("SelectAccount", uint(2)).Return([]domain.Order{
+	repository.On("SelectAccount", uint(2), 0, 0).Return([]domain.Order{
 		{DBModel: domain.DBModel{ID: 1}},
 		{DBModel: domain.DBModel{ID: 2}},
 	}, nil)
-	repository.On("UpdateStatus", uint(1), domain.OrderStatusCanceled).Return(nil)
-	resource.On("Modification", uint(1), uint(1)).Return(nil)
-	repository.On("UpdateStatus", uint(2), domain.OrderStatusCanceled).Return(nil)
-	resource.On("Modification", uint(1), uint(2)).Return(nil)
+	repository.On("BatchUpdateStatus", []uint{1, 2}, domain.OrderStatusCanceled).Return(nil)
+	resource.On("BatchModification", uint(1), []uint{1, 2}).Return(nil)
 
 	err := usecase.CancelByAccount(1, 2)
 

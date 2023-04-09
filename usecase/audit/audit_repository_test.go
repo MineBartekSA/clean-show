@@ -50,3 +50,24 @@ func TestInsert(t *testing.T) {
 
 	assert.NoError(t, err)
 }
+
+func TestBatchInsert(t *testing.T) {
+	repository, _, prepared := NewRepository(t)
+	entry := domain.AuditEntry{
+		Type:         domain.EntryTypeDeletion,
+		ResourceType: domain.ResourceTypeSession,
+		ResourceID:   10,
+		ExecutorID:   50,
+	}
+
+	prepared[0].ExpectExec().
+		WithArgs(entry.Type, entry.ResourceType, entry.ResourceID, entry.ExecutorID).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	prepared[0].ExpectExec().
+		WithArgs(entry.Type, entry.ResourceType, entry.ResourceID, entry.ExecutorID).
+		WillReturnResult(sqlmock.NewResult(2, 1))
+
+	err := repository.BatchInsert([]domain.AuditEntry{entry, entry})
+
+	assert.NoError(t, err)
+}

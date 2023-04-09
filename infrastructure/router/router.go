@@ -13,8 +13,8 @@ import (
 )
 
 type router struct {
+	Engine  *gin.Engine
 	srv     *http.Server
-	engine  *gin.Engine
 	api     *gin.RouterGroup
 	session domain.SessionUsecase
 	account domain.AccountUsecase
@@ -30,14 +30,13 @@ func NewRouter(s domain.SessionUsecase, a domain.AccountUsecase) domain.Router {
 
 	e.Use(gzip.DefaultHandler().Gin)
 
-	// TODO: Add Static with minify
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Env.Port),
 		Handler: e,
 	}
 	return &router{
 		srv:     srv,
-		engine:  e,
+		Engine:  e,
 		api:     e.Group("/api"),
 		session: s,
 		account: a,
@@ -100,11 +99,11 @@ func (grg *ginRouteGroup) endpointHandler(handler domain.Handler, authorized dom
 		return func(c *gin.Context) {
 			context := NewContext(c)
 
-			auth := strings.ToLower(context.GetHeader("Authorization"))
+			auth := (context.GetHeader("Authorization"))
 			if t, err := context.Cookie("token"); err == nil {
 				auth = t
 			} else {
-				if !strings.HasPrefix(auth, "bearer ") {
+				if len(auth) <= 7 || strings.ToLower(auth[:7]) != "bearer " {
 					context.Error(domain.ErrUnauthorized.Call())
 					return
 				}

@@ -126,7 +126,7 @@ func TestUpdate(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestDelete(t *testing.T) {
+func TestDeleteRepository(t *testing.T) {
 	repository, mock, prepared := NewRepository(t)
 	id := uint(7)
 
