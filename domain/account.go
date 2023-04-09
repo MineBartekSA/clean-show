@@ -1,5 +1,7 @@
 package domain
 
+import "unicode"
+
 type Account struct {
 	DBModel `json:"-"`
 	Type    AccountType `db:"type" json:"type" patch:"-"`
@@ -25,6 +27,38 @@ type AccountCreate struct {
 	*AccountLogin
 	Name    string `json:"name"`
 	Surname string `json:"surname"`
+}
+
+func (al *AccountLogin) Validate() error {
+	return ValidatePassword(al.Password)
+}
+
+func ValidatePassword(password string) error {
+	if len(password) < 8 {
+		return ErrBadPassword.Call()
+	}
+	up := false
+	low := false
+	digit := false
+	other := false
+	for _, char := range password {
+		if unicode.IsUpper(char) {
+			up = true
+		} else if unicode.IsLower(char) {
+			low = true
+		} else if unicode.IsDigit(char) {
+			digit = true
+		} else {
+			other = true
+		}
+		if up && low && digit && other {
+			break
+		}
+	}
+	if !up || !low || !digit || !other {
+		return ErrBadPassword.Call()
+	}
+	return nil
 }
 
 //go:generate mockery --name AccountController

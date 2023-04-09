@@ -95,6 +95,10 @@ var (
 		Message: "bad request",
 		Status:  http.StatusBadRequest,
 	}
+	ErrBadPassword = &Error{
+		Message: "invalid password",
+		Status:  http.StatusBadRequest,
+	}
 	ErrNotFound = &Error{
 		Message: "resource not found",
 		Status:  http.StatusNotFound,

@@ -58,14 +58,14 @@ func TestLogin(t *testing.T) {
 func TestRegister(t *testing.T) {
 	repository := mocks.NewAccountRepository(t)
 	session := mocks.NewSessionUsecase(t)
-	hasher := test.NewMockHasher().Add("test", "HASH")
+	hasher := test.NewMockHasher().Add("testTest1@", "HASH")
 	_, _, audit := AccountAudit(t)
 	usecase := account.NewAccountUsecase(repository, nil, session, audit, hasher)
 
 	register := domain.AccountCreate{
 		AccountLogin: &domain.AccountLogin{
 			Email:    "test@example.com",
-			Password: "test",
+			Password: "testTest1@",
 		},
 		Name:    "Test",
 		Surname: "User",
@@ -200,7 +200,7 @@ func TestFetchOrders(t *testing.T) {
 
 func TestModifyPassword(t *testing.T) {
 	repository := mocks.NewAccountRepository(t)
-	hasher := test.NewMockHasher().Add("hello", "HASH")
+	hasher := test.NewMockHasher().Add("helloTest1#", "HASH")
 	_, password, audit := AccountAudit(t)
 	usecase := account.NewAccountUsecase(repository, nil, nil, audit, hasher)
 
@@ -216,7 +216,7 @@ func TestModifyPassword(t *testing.T) {
 	repository.On("UpdateHash", session.Account.ID, "HASH").Return(nil)
 	password.On("Modification", session.Account.ID, session.Account.ID).Return(nil)
 
-	err := usecase.ModifyPassword(&session, 7, "hello")
+	err := usecase.ModifyPassword(&session, 7, "helloTest1#")
 
 	assert.NoError(t, err)
 }

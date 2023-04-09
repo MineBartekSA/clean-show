@@ -11,14 +11,21 @@ type accountUsecase struct {
 	order   domain.OrderUsecase
 	session domain.SessionUsecase
 
-	auditPassword domain.AuditResource
 	audit         domain.AuditResource
+	auditPassword domain.AuditResource
 
 	hasher domain.Hasher
 }
 
 func NewAccountUsecase(repository domain.AccountRepository, order domain.OrderUsecase, session domain.SessionUsecase, audit domain.AuditUsecase, hasher domain.Hasher) domain.AccountUsecase {
-	return &accountUsecase{repository, order, session, audit.Resource(domain.ResourceTypeAccountPassword), audit.Resource(domain.ResourceTypeAccount), hasher}
+	return &accountUsecase{
+		repository:    repository,
+		order:         order,
+		session:       session,
+		audit:         audit.Resource(domain.ResourceTypeAccount),
+		auditPassword: audit.Resource(domain.ResourceTypeAccountPassword),
+		hasher:        hasher,
+	}
 }
 
 func (au *accountUsecase) Login(login *domain.AccountLogin) (*domain.Account, string, error) {
@@ -49,10 +56,14 @@ func (au *accountUsecase) Register(register *domain.AccountCreate) (*domain.Acco
 		Surname: register.Surname,
 	}
 
-	// TODO: password must be at least 8 characters long with .......
+	err := register.Validate()
+	if err != nil {
+		return nil, "", err
+	}
+
 	account.Hash = au.hasher.Hash(register.Password)
 
-	err := au.repository.Insert(&account)
+	err = au.repository.Insert(&account)
 	if err != nil {
 		return nil, "", err
 	}
@@ -117,6 +128,11 @@ func (au *accountUsecase) ModifyPassword(session domain.UserSession, accountId u
 	}
 	if aid != account.ID && account.Type == domain.AccountTypeStaff {
 		return domain.Fatal(domain.ErrUnauthorized, "only the owner of this account can change its password").Call()
+	}
+
+	err = domain.ValidatePassword(new)
+	if err != nil {
+		return err
 	}
 	err = au.repository.UpdateHash(account.ID, au.hasher.Hash(new))
 	if err != nil {
