@@ -3,7 +3,6 @@ package session
 import (
 	"time"
 
-	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
 )
 
@@ -35,24 +34,7 @@ func (sr *sessionRespository) SelectByToken(token string) (*domain.Session, erro
 }
 
 func (sr *sessionRespository) Insert(session *domain.Session) error {
-	var err error
-	if config.Env.DBDriver == "mysql" {
-		err = sr.db.Transaction(func(tx domain.Tx) error {
-			res, err := tx.Stmt(sr.insert).Exec(session)
-			if err != nil {
-				return err
-			}
-			id, err := res.LastInsertId()
-			if err != nil {
-				return err
-			}
-			session.ID = uint(id)
-			return nil
-		})
-	} else {
-		err = sr.insert.Get(session, session)
-	}
-	return domain.SQLError(err)
+	return sr.db.InsertStmt(sr.insert, session)
 }
 
 func (sr *sessionRespository) Extend(sessionId uint) error {

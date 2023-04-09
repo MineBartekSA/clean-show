@@ -74,17 +74,19 @@ func (au *accountUsecase) FetchByID(session domain.UserSession, id uint) (*domai
 	return au.repository.SelectID(id, false)
 }
 
-func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, data map[string]any) error {
-	aid := session.GetAccountID()
-	if !session.IsStaff() && session.GetAccountID() != accountId {
+func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, data map[string]any) (err error) {
+	account := session.GetAccount()
+	if !session.IsStaff() && account.ID != accountId {
 		return domain.Fatal(domain.ErrUnauthorized, "only staff users can modify other accounts information").Call()
 	}
-	account, err := au.repository.SelectID(accountId, false) // TODO: Is this necessary??? It isn't if requesting the same account as the authenticated
-	if err != nil {
-		return err
-	}
-	if aid != account.ID && account.Type == domain.AccountTypeStaff {
-		return domain.Fatal(domain.ErrUnauthorized, "only the owner of this account can change its information").Call()
+	if account.ID != accountId {
+		account, err = au.repository.SelectID(accountId, false)
+		if err != nil {
+			return err
+		}
+		if account.Type == domain.AccountTypeStaff {
+			return domain.Fatal(domain.ErrUnauthorized, "only the owner of this account can change its information").Call()
+		}
 	}
 	err = usecase.PatchModel(account, data)
 	if err != nil {
@@ -94,7 +96,7 @@ func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, dat
 	if err != nil {
 		return err
 	}
-	return au.audit.Modification(aid, accountId)
+	return au.audit.Modification(session.GetAccountID(), accountId)
 }
 
 func (au *accountUsecase) FetchOrders(session domain.UserSession, accountId uint, limit, page int) ([]domain.Order, error) {
@@ -116,8 +118,7 @@ func (au *accountUsecase) ModifyPassword(session domain.UserSession, accountId u
 	if aid != account.ID && account.Type == domain.AccountTypeStaff {
 		return domain.Fatal(domain.ErrUnauthorized, "only the owner of this account can change its password").Call()
 	}
-	account.Hash = au.hasher.Hash(new)
-	err = au.repository.Update(account)
+	err = au.repository.UpdateHash(account.ID, au.hasher.Hash(new))
 	if err != nil {
 		return err
 	}

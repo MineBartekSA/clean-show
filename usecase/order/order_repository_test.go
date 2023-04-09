@@ -198,7 +198,7 @@ func TestUpdate(t *testing.T) {
 	order := mockOrders[0]
 
 	prepared[7].ExpectExec().
-		WithArgs(order.Status, order.OrderBy, order.ShippingAddress, order.InvoiceAddress, order.Products, order.ShippingPrice, order.Total, order.ID).
+		WithArgs(order.Status, order.ShippingAddress, order.InvoiceAddress, order.Products, order.ShippingPrice, order.Total, order.ID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	err := repository.Update(&order)

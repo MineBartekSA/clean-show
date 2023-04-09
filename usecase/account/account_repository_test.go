@@ -30,6 +30,7 @@ func NewRepository(t *testing.T) (domain.AccountRepository, sqlmock.Sqlmock, []*
 			mock.ExpectPrepare("SELECT \\* FROM accounts WHERE id = \\? AND deleted_at IS NULL"),
 			mock.ExpectPrepare("INSERT INTO accounts \\(.*\\) VALUES \\(.*\\) RETURNING id"),
 			mock.ExpectPrepare("UPDATE accounts SET .*, updated_at = NOW\\(\\) WHERE id = \\?"),
+			mock.ExpectPrepare("UPDATE accounts SET hash = \\?, updated_at = NOW\\(\\) WHERE id = \\?"),
 			mock.ExpectPrepare("UPDATE accounts SET email = '@'\\+email, updated_at = NOW\\(\\) WHERE id = \\?"),
 			mock.ExpectPrepare("UPDATE accounts SET deleted_at = NOW\\(\\) WHERE id = \\?"),
 		}
@@ -118,10 +119,21 @@ func TestUpdate(t *testing.T) {
 	}
 
 	prepared[4].ExpectExec().
-		WithArgs(account.Type, account.Email, account.Hash, account.Name, account.Surname, account.ID).
+		WithArgs(account.Type, account.Email, account.Name, account.Surname, account.ID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	err := repository.Update(&account)
+
+	assert.NoError(t, err)
+}
+
+func TestUpdateHash(t *testing.T) {
+	repository, _, prepared := NewRepository(t)
+	hash := "HASH"
+
+	prepared[5].ExpectExec().WithArgs(hash, uint(1)).WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err := repository.UpdateHash(1, hash)
 
 	assert.NoError(t, err)
 }
@@ -131,8 +143,8 @@ func TestDeleteRepository(t *testing.T) {
 	id := uint(7)
 
 	mock.ExpectBegin()
-	prepared[5].ExpectExec().WithArgs(id).WillReturnResult(sqlmock.NewResult(0, 1))
 	prepared[6].ExpectExec().WithArgs(id).WillReturnResult(sqlmock.NewResult(0, 1))
+	prepared[7].ExpectExec().WithArgs(id).WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
 	err := repository.Delete(id)

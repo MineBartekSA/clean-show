@@ -59,5 +59,6 @@ type AccountRepository interface {
 	SelectID(id uint, full bool) (*Account, error)
 	Insert(account *Account) error
 	Update(account *Account) error
+	UpdateHash(accountId uint, hash string) error
 	Delete(id uint) error
 }

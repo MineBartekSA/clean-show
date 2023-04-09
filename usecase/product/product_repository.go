@@ -1,7 +1,6 @@
 package product
 
 import (
-	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
 )
 
@@ -46,24 +45,7 @@ func (pr *productRepository) SelectID(id uint) (*domain.Product, error) {
 }
 
 func (pr *productRepository) Insert(product *domain.Product) error {
-	var err error
-	if config.Env.DBDriver == "mysql" { // TODO: Try to generalize Inserts
-		err = pr.db.Transaction(func(tx domain.Tx) error {
-			res, err := tx.Stmt(pr.insert).Exec(product)
-			if err != nil {
-				return err
-			}
-			id, err := res.LastInsertId()
-			if err != nil {
-				return err
-			}
-			product.ID = uint(id)
-			return nil
-		})
-	} else {
-		err = pr.insert.Get(product, product)
-	}
-	return domain.SQLError(err)
+	return pr.db.InsertStmt(pr.insert, product)
 }
 
 func (pr *productRepository) Update(product *domain.Product) error {

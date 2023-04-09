@@ -131,12 +131,12 @@ func TestInsert(t *testing.T) {
 
 	prepared[3].ExpectQuery().
 		WithArgs(product.Status, product.Name, product.Description, product.Price, product.Images).
-		WillReturnRows(test.NewRows("id").AddRow(1))
+		WillReturnRows(test.NewRows("id").AddRow(5))
 
 	err := repository.Insert(&product)
 
 	assert.NoError(t, err)
-	assert.Equal(t, uint(1), product.ID)
+	assert.Equal(t, uint(5), product.ID)
 }
 
 func TestUpdate(t *testing.T) {

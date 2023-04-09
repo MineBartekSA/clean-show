@@ -72,20 +72,24 @@ type OrderCreate struct {
 }
 
 func (oc *OrderCreate) ToOrder(orderBy uint) *Order {
-	total := float64(0)
-	for _, product := range oc.Products {
-		total += product.Price
-	}
-	total += oc.ShippingPrice
-	return &Order{
+	order := &Order{
 		Status:          OrderStatusCreated,
 		OrderBy:         orderBy,
 		ShippingAddress: oc.ShippingAddress,
 		InvoiceAddress:  oc.InvoiceAddress,
 		Products:        oc.Products,
 		ShippingPrice:   oc.ShippingPrice,
-		Total:           total,
 	}
+	order.UpdateTotal()
+	return order
+}
+
+func (o *Order) UpdateTotal() {
+	o.Total = float64(0)
+	for _, product := range o.Products {
+		o.Total += product.Price * float64(product.Amount)
+	}
+	o.Total += o.ShippingPrice
 }
 
 //go:generate mockery --name OrderController

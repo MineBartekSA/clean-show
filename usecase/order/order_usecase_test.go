@@ -102,7 +102,21 @@ func TestModify(t *testing.T) {
 		DBModel: domain.DBModel{
 			ID: 7,
 		},
+		Products: domain.DBArray[domain.ProductOrder]{
+			{
+				ProductID: 1,
+				Amount:    1,
+				Price:     5,
+			},
+			{
+				ProductID: 2,
+				Amount:    3,
+				Price:     10.7,
+			},
+		},
 	}
+	order.UpdateTotal()
+	pre := order.Total
 	session := test.MockUserSession{
 		Account: &domain.Account{
 			DBModel: domain.DBModel{
@@ -124,7 +138,7 @@ func TestModify(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, domain.OrderStatusShipped, order.Status)
 	assert.Equal(t, float64(10.5), order.ShippingPrice)
-	assert.Empty(t, order.Total)
+	assert.Equal(t, pre+float64(10.5), order.Total)
 }
 
 func TestCancel(t *testing.T) {

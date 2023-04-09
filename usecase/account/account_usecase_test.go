@@ -152,12 +152,17 @@ func TestModify(t *testing.T) {
 		},
 	}
 	session := test.MockUserSession{
-		Account: &account,
+		Account: &domain.Account{
+			DBModel: domain.DBModel{
+				ID: 6,
+			},
+			Type: domain.AccountTypeStaff,
+		},
 	}
 
 	repository.On("SelectID", account.ID, false).Return(&account, nil)
 	repository.On("Update", &account).Return(nil)
-	auditAccount.On("Modification", session.GetAccountID(), account.ID).Return(nil)
+	auditAccount.On("Modification", uint(6), account.ID).Return(nil)
 
 	err := usecase.Modify(&session, 7, map[string]any{
 		"email": "test@test.com",
@@ -208,13 +213,12 @@ func TestModifyPassword(t *testing.T) {
 	}
 
 	repository.On("SelectID", session.Account.ID, false).Return(session.Account, nil)
-	repository.On("Update", session.Account).Return(nil)
+	repository.On("UpdateHash", session.Account.ID, "HASH").Return(nil)
 	password.On("Modification", session.Account.ID, session.Account.ID).Return(nil)
 
 	err := usecase.ModifyPassword(&session, 7, "hello")
 
 	assert.NoError(t, err)
-	assert.Equal(t, "HASH", session.Account.Hash)
 }
 
 func TestLogout(t *testing.T) {

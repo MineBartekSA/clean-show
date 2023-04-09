@@ -3,7 +3,6 @@ package order
 import (
 	"fmt"
 
-	"github.com/minebarteksa/clean-show/config"
 	"github.com/minebarteksa/clean-show/domain"
 )
 
@@ -33,7 +32,7 @@ func NewOrderRepository(db domain.DB) domain.OrderRepository {
 		selectID:           db.PrepareSelect("orders", "id = :id"),
 		selectOrderBy:      db.Prepare("SELECT order_by FROM orders WHERE id = :id AND deleted_at IS NULL"),
 		insert:             db.PrepareInsertStruct("orders", &domain.Order{}),
-		update:             db.PrepareUpdateStruct("orders", &domain.Order{}, "id = :id"),
+		update:             db.PrepareUpdateStruct("orders", &domain.Order{}, "id = :id", "order_by"),
 		updateStatus:       db.PrepareUpdate("orders", "status = :status", "id = :id"),
 		batchUpdateStatus:  db.PrepareUpdate("orders", "status = :status", "id IN (:orders)"),
 		delete:             db.PrepareSoftDelete("orders", "id = :id"),
@@ -74,24 +73,7 @@ func (or *orderRepository) SelectOrderBy(orderId uint) (uint, error) {
 }
 
 func (or *orderRepository) Insert(order *domain.Order) error {
-	var err error
-	if config.Env.DBDriver == "mysql" { // TODO: Try to generalize Inserts
-		err = or.db.Transaction(func(tx domain.Tx) error {
-			res, err := tx.Stmt(or.insert).Exec(order)
-			if err != nil {
-				return err
-			}
-			id, err := res.LastInsertId()
-			if err != nil {
-				return err
-			}
-			order.ID = uint(id)
-			return nil
-		})
-	} else {
-		err = or.insert.Get(order, order)
-	}
-	return domain.SQLError(err)
+	return or.db.InsertStmt(or.insert, order)
 }
 
 func (or *orderRepository) Update(order *domain.Order) error {

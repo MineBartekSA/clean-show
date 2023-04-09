@@ -34,17 +34,17 @@ func NewSqlDB(db *sqlx.DB) domain.DB {
 	createTable(db, "accounts", `
 		type INT NOT NULL,
 		email VARCHAR(320) NOT NULL,
-		hash TEXT NOT NULL,
-		name TEXT NOT NULL,
-		surname TEXT NOT NULL
-	`, "UNIQUE email") // TODO: Change hash VARCHAR // namd and surname should also be VARCHAR
+		hash VARCHAR(700) NOT NULL,
+		name VARCHAR(128) NOT NULL,
+		surname VARCHAR(128) NOT NULL
+	`, "UNIQUE email") // Note: The length of hash my vary
 	createTable(db, "products", `
 		status INT NOT NULL,
-		name TEXT NOT NULL,
+		name VARCHAR(128) NOT NULL,
 		description TEXT NOT NULL,
 		price REAL NOT NULL,
 		images TEXT NOT NULL
-	`) // TODO: name should be chnaged to VARCHAR
+	`)
 	createTable(db, "orders", `
 		status INT NOT NULL,
 		order_by INT NOT NULL,
@@ -86,11 +86,20 @@ func (db *sqldb) PrepareSelect(table string, where string) domain.Stmt {
 	return stmt
 }
 
-func (db *sqldb) PrepareUpdateStruct(table string, arg any, where string) domain.Stmt {
+func (db *sqldb) PrepareUpdateStruct(table string, arg any, where string, ignoreCols ...string) domain.Stmt {
 	cols := getStructureKeys(arg)
 	set := ""
 	for _, col := range cols {
-		set += fmt.Sprintf("%s = :%s, ", col, col)
+		found := false
+		for _, ignore := range ignoreCols {
+			if col == ignore {
+				found = true
+				break
+			}
+		}
+		if !found {
+			set += fmt.Sprintf("%s = :%s, ", col, col)
+		}
 	}
 	return db.PrepareUpdate(table, set[:len(set)-2], where)
 }
@@ -144,6 +153,38 @@ func (db *sqldb) Transaction(transaction func(domain.Tx) error) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+func (db *sqldb) InsertStmt(stmt domain.Stmt, arg any) error {
+	argVal := reflect.ValueOf(arg)
+	if argVal.Kind() == reflect.Ptr {
+		argVal = argVal.Elem()
+	}
+	if argVal.Kind() != reflect.Struct {
+		Log.Panicw("argument is not a structure", "type", argVal.Type(), "value", arg)
+	}
+	dbm := argVal.FieldByName("DBModel")
+	if dbm == reflect.ValueOf(nil) {
+		Log.Panicw("invalid insert argument type", "type", argVal.Type(), "value", arg)
+	}
+	var err error
+	if config.Env.DBDriver == "mysql" {
+		err = db.Transaction(func(tx domain.Tx) error {
+			res, err := tx.Stmt(stmt).Exec(arg)
+			if err != nil {
+				return err
+			}
+			id, err := res.LastInsertId()
+			if err != nil {
+				return err
+			}
+			dbm.FieldByName("ID").Set(reflect.ValueOf(uint(id)))
+			return nil
+		})
+	} else {
+		err = stmt.Get(arg, arg)
+	}
+	return domain.SQLError(err)
 }
 
 type sqltx struct {
