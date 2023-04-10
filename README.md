@@ -1,8 +1,6 @@
 # Showcase repository
 
-Work in progress
-
- ==> Description of the project
+This project aims to showcase my ability to design and write a simple REST backend server utilizing dependedcy injection and clean architecture
 
 Please note, this is not a production ready server.
 This project is a very simple and basic implementation of a online store backend
