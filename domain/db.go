@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/minebarteksa/clean-show/config"
+	. "github.com/minebarteksa/clean-show/logger"
 )
 
 type H map[string]interface{}
@@ -79,7 +79,7 @@ func fromString[T any](in string) T {
 		val.Elem().SetString(in)
 		return a
 	}
-	log.Panicf("type %T does not implement FromString", a)
+	Log.Panicf("type %T does not implement FromString", a)
 	return a
 }
 
@@ -89,6 +89,22 @@ func (a DBArray[any]) Value() (driver.Value, error) {
 		tmp = append(tmp, fmt.Sprint(val))
 	}
 	return strings.Join(tmp, ";"), nil
+}
+
+func (a *DBArray[T]) FromInterfaceSlice(in []any) {
+	for _, val := range in {
+		var new T
+		newVal := reflect.ValueOf(&new)
+		if newVal.Elem().Kind() == reflect.String {
+			str := val.(string)
+			newVal.Elem().SetString(str)
+		} else if m := newVal.MethodByName("FromInterfaceMap"); m != reflect.ValueOf(nil) {
+			m.Call([]reflect.Value{reflect.ValueOf(val)})
+		} else {
+			Log.Panicf("can not convert interface map to %T", new)
+		}
+		*a = append(*a, new)
+	}
 }
 
 func DBNow() string {

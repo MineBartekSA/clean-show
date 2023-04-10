@@ -34,7 +34,7 @@ func NewSqlDB(db *sqlx.DB) domain.DB {
 	createTable(db, "accounts", `
 		type INT NOT NULL,
 		email VARCHAR(320) NOT NULL,
-		hash VARCHAR(700) NOT NULL,
+		hash VARCHAR(900) NOT NULL,
 		name VARCHAR(128) NOT NULL,
 		surname VARCHAR(128) NOT NULL
 	`, "UNIQUE email") // Note: The length of hash my vary

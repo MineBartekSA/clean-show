@@ -5,6 +5,8 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	. "github.com/minebarteksa/clean-show/logger"
 )
 
 type Order struct {
@@ -58,6 +60,38 @@ func (po *ProductOrder) FromString(in string) {
 	po.ProductID = uint(pid)
 	po.Amount = uint(amount)
 	po.Price = price
+}
+
+func (po *ProductOrder) FromInterfaceMap(in map[string]any) {
+	po.ProductID = uint(jsonToInt(in["product_id"]))
+	po.Amount = uint(jsonToInt(in["product_id"]))
+	po.Price = jsonToFloat(in["price"])
+}
+
+func jsonToInt(in any) int {
+	i, ok := in.(int64)
+	if ok {
+		return int(i)
+	}
+	f, ok := in.(float64)
+	if ok {
+		return int(f)
+	}
+	Log.Panicf("can not cast %T to int", in)
+	return 0
+}
+
+func jsonToFloat(in any) float64 {
+	f, ok := in.(float64)
+	if ok {
+		return f
+	}
+	i, ok := in.(int64)
+	if ok {
+		return float64(i)
+	}
+	Log.Panicf("can not cast %T to float64", in)
+	return 0
 }
 
 func (po ProductOrder) String() string {

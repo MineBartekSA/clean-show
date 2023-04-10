@@ -1,6 +1,7 @@
 package usecase_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"testing"
@@ -61,6 +62,23 @@ func TestPatchModel(t *testing.T) {
 	assert.Equal(t, float64(5.9), testStruct.Float)
 	assert.Equal(t, true, testStruct.Bool)
 	assert.Equal(t, 10, testStruct.NoPatch)
+}
+
+func TestPatchModelFromJSON(t *testing.T) {
+	testStruct := PatchModelTest{}
+	var input map[string]any
+	err := json.Unmarshal([]byte("{\"ID\":10,\"string\":\"hello there\",\"Integer\":300,\"Float\":5.9,\"Bool\":true}"), &input)
+	assert.NoError(t, err)
+
+	err = usecase.PatchModel(&testStruct, input)
+
+	assert.NoError(t, err)
+	assert.Equal(t, uint(0), testStruct.ID)
+	assert.Equal(t, "hello there", testStruct.String)
+	assert.Equal(t, 300, testStruct.Integer)
+	assert.Equal(t, float64(5.9), testStruct.Float)
+	assert.Equal(t, true, testStruct.Bool)
+	assert.Equal(t, 0, testStruct.NoPatch)
 }
 
 func TestGetLimitPage(t *testing.T) {
