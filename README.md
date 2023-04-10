@@ -39,11 +39,12 @@ This command will generate the `clean-show` executable file
 
 ## Test
 
-Before you test, you need to generate mock files
+Before you test, you need to install [vektra/mockery](https://github.com/vektra/mockery) and generate mock files
 
 Run these commands to test this project:
 
 ```console
+$ go install github.com/vektra/mockery/v2@v2.20.0
 $ go generate ./...
 $ go test ./...
 ```
