@@ -20,12 +20,15 @@ This project is **not** production ready. The following concerns should be addre
 - No database migrations. \
   There is nothing in place to migrate model changes to database tables and table creation is statically written
 - No proper SQL builder. \
-  Although any SQL query errors will be raised before the server starts, queries can be written incorrectly
+  Although any SQL query syntax errors will be raised before the server starts, queries can be written incorrectly. \
+  Implementation of any more advanced SQL features might require a lot of changes
 - Errors are not verbose enough. \
   Error messages returned to the end user aren't verbose enough which might make debugging harder
 - Only the most basic tests are written. \
   Tests only test the most basic and successful situation.
   They should be more exhaustive
+- This project was written with multiple databases in mind. \
+  Although some production-ready servers might support multiple databases, generally this approach adds a lot of unnecessary requirements and constraints
 
 ## Build
 
