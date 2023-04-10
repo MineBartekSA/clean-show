@@ -2,7 +2,7 @@
 
 A showcase written in go utilizing the Gin web framework for delivery and fx framework for dependency injection.
 
-Project specification: [SPEC.md](../blob/main/SPEC.md)
+Project specification: [SPEC.md](../../main/SPEC.md)
 
 This project is **not** production ready. The following concerns should be addressed to make this project production ready:
 
