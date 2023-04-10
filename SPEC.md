@@ -13,13 +13,13 @@
     - [1.2.5. POST /api/order/:id/cancel](#125-post-apiorderidcancel)
     - [1.2.6. DELETE /api/order/:id](#126-delete-apiorderid)
   - [1.3. Account API](#13-account-api)
-    - [1.3.1. POST /api/account/login](#131-post-apiaccountlogin)
-    - [1.3.2. POST /api/account/register](#132-post-apiaccountregister)
-    - [1.3.3. GET /api/account/:id](#133-get-apiaccountid)
-    - [1.3.4. PATCH /api/account/:id](#134-patch-apiaccountid)
-    - [1.3.5. GET /api/account/:id/orders](#135-get-apiaccountidorders)
-    - [1.3.6. POST /api/account/:id/password](#136-post-apiaccountidpassword)
-    - [1.3.7. GET /api/account/:id/logout](#137-get-apiaccountidlogout)
+    - [1.3.1. POST /api/account/register](#131-post-apiaccountregister)
+    - [1.3.2. POST /api/account/login](#132-post-apiaccountlogin)
+    - [1.3.3. GET /api/account/:id/logout](#133-get-apiaccountidlogout)
+    - [1.3.4. GET /api/account/:id](#134-get-apiaccountid)
+    - [1.3.5. PATCH /api/account/:id](#135-patch-apiaccountid)
+    - [1.3.6. GET /api/account/:id/orders](#136-get-apiaccountidorders)
+    - [1.3.7. POST /api/account/:id/password](#137-post-apiaccountidpassword)
     - [1.3.8. DELETE /api/account/:id](#138-delete-apiaccountid)
 - [2. Models](#2-models)
   - [2.1. Product](#21-product)
@@ -27,8 +27,11 @@
   - [2.2. Order](#22-order)
     - [2.2.1. OrderStatus](#221-orderstatus)
     - [2.2.2. ProductOrder](#222-productorder)
+    - [2.2.3. OrderCreate](#223-ordercreate)
   - [2.3. Account](#23-account)
     - [2.3.1 AccountType](#231-accounttype)
+    - [2.3.2. AccountLogin](#232-accountlogin)
+    - [2.3.3. AccountCreate](#233-accountcreate)
   - [2.4. Session](#24-session)
   - [2.5. Audit Entry](#25-audit-entry)
     - [2.5.1. EntryType](#251-entrytype)
@@ -74,6 +77,7 @@ Get product information for a specific product
 
 Returns:
 - `200 OK` - JSON-encoded product
+- `400 Bad Request` - Request contains malformed id
 - `404 Not Found` - Product with given ID does not exists
 
 ### 1.1.4. PATCH /api/product/:id
@@ -106,6 +110,7 @@ Remove a sepcific product
 
 Returns:
 - `203 No Content` - Product was successfully deleted
+- `400 Bad Request` - Request contains malformed id
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Product with given ID does not exists
 
@@ -136,7 +141,7 @@ Create a new order
 > **Note**
 > This endpoint, on success, will create an audit entry
 
-Accepts: Partial JSON-encoded order model
+Accepts: JSON-encoded [OrderCreate](#223-ordercreate) model
 
 Returns:
 - `200 OK` - JSON-encoded order confirmation
@@ -153,6 +158,7 @@ Get order information for a specific order
 
 Returns:
 - `200 OK` - JSON-encoded order information
+- `400 Bad Request` - Request contains malformed id
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Order with given ID does not exists
 
@@ -185,11 +191,9 @@ Cancel order
 > **Note**
 > This endpoint, on success, will create an audit entry
 
-Accepts: JSON-encoded cancelation reason
-
 Returns:
 - `200 No content` - Succesfully canceled order
-- `400 Bad Request` - Malformed body or it contains invalid data
+- `400 Bad Request` - Request contains malformed id
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Order with given ID does not exists
 
@@ -205,19 +209,33 @@ Remove a sepcific order
 
 Returns:
 - `203 No Content` - Order was successfully deleted
+- `400 Bad Request` - Request contains malformed id
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Order with given ID does not exists
 
 ## 1.3. Account API
 
-### 1.3.1. POST /api/account/login
+### 1.3.1. POST /api/account/register
+
+Create a new account
+
+> **Note**
+> This endpoint, on success, will create an audit entry
+
+Accepts: JSON-encoded [AccountCreate](#233-accountcreate) model
+
+Returns:
+- `200 OK` - Account creation confirmation with the account's access token
+- `400 Bad Request` - Malformed body or it contains invalid data
+
+### 1.3.2. POST /api/account/login
 
 Get account access token
 
 > **Note**
 > This endpoint, on success, will create an audit entry
 
-Accepts: JSON-encoded account e-mail and hashed password
+Accepts: JSON-encoded [AccountLogin](#232-accountlogin) model
 
 Returns:
 - `200 OK` - Account login confirmation with the account's access token
@@ -225,20 +243,21 @@ Returns:
 - `401 Unauthorized` - Password hash does not match
 - `404 Not Found` - Account with the given e-mail does not exists
 
-### 1.3.2. POST /api/account/register
+### 1.3.3. GET /api/account/:id/logout
 
-Create a new account
+Logout request. Invalidate the current session token
+
+> **Warning**
+> Requires Authorization.
 
 > **Note**
 > This endpoint, on success, will create an audit entry
 
-Accepts: JSON-encoded account model without the ID field
-
 Returns:
-- `200 OK` - Account creation confirmation with the account's access token
-- `400 Bad Request` - Malformed body or it contains invalid data
+- `203 No Content` - Successfully logged out
+- `401 Unauthorized` - No `Authorization` header or it has invalid data
 
-### 1.3.3. GET /api/account/:id
+### 1.3.4. GET /api/account/:id
 
 Get information about a specific account.
 Use `@me` as the id to get informations about the current account
@@ -249,10 +268,11 @@ Use `@me` as the id to get informations about the current account
 
 Returns:
 - `200 OK` - JSON-encoded account information
+- `400 Bad Request` - Request contains malformed id
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Account with given ID does not exists
 
-### 1.3.4. PATCH /api/account/:id
+### 1.3.5. PATCH /api/account/:id
 
 Modify accout information
 
@@ -271,7 +291,7 @@ Returns:
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Account with given ID does not exists
 
-### 1.3.5. GET /api/account/:id/orders
+### 1.3.6. GET /api/account/:id/orders
 
 Get a list of orders made by the given account
 
@@ -285,40 +305,26 @@ Query params:
 
 Returns:
 - `200 OK` - JSON-encoded list of order information
+- `400 Bad Request` - Request contains malformed id
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Account with given ID does not exists
 
-### 1.3.6. POST /api/account/:id/password
+### 1.3.7. POST /api/account/:id/password
 
 Change password for the given account
 
 > **Warning**
 > Requires Authorization.
-> Only Staff can change other account password without the knowlage of the original password
+> Only Staff can change other accounts password
 
 > **Note**
 > This endpoint, on success, will create an audit entry
 
-Accepts: JSON-encoded old and new password hashes
+Accepts: JSON-encoded new password
 
 Returns:
 - `200 OK` - Password change confirmation with a new access token
 - `400 Bad Request` - Malformed body or it contains invalid data
-- `401 Unauthorized` - No `Authorization` header or it has invalid data
-- `404 Not Found` - Account with given ID does not exists
-
-### 1.3.7. GET /api/account/:id/logout
-
-Logout request. Invalidate the current session token
-
-> **Warning**
-> Requires Authorization.
-
-> **Note**
-> This endpoint, on success, will create an audit entry
-
-Returns:
-- `203 No Content` - Successfully logged out
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Account with given ID does not exists
 
@@ -335,6 +341,7 @@ Remove account with the given id
 
 Returns:
 - `203 No Content` - Successfully removed account
+- `400 Bad Request` - Request contains malformed id
 - `401 Unauthorized` - No `Authorization` header or it has invalid data
 - `404 Not Found` - Account with given ID does not exists
 
@@ -342,7 +349,7 @@ Returns:
 
 In this document, field names are in PascalCase which isn't a requirement for field names in code
 
-Models field names should be consistent with the language nameing convention
+Model field names should be consistent with the language naming convention
 
 SQL table column names and JSON keys should use **snake_case** instead
 
@@ -410,9 +417,20 @@ OrderStatus is an enum with the following values:
 |-----------|-------|-------------
 | ProductID | uint  | The ID of the ordered product
 | Amount    | uint  | The amount ordered
-| Price     | float | Price at the time of the order
+| Price     | float | Price per piece at the time of the order
 
 Structure can be represented and stored as a comma separated string
+
+### 2.2.3. OrderCreate
+
+| Field           | Type                | Description
+|-----------------|---------------------|-------------
+| ShippingAddress | string              | Shipping address
+| InvoiceAddress  | string              | Invoice addresss. If empty, use shipping address
+| Products        | array([ProductOrder](#222-productorder)) | List of ordered products with the amount and price per piece. Can be represented and stored as a semicolon separated string
+| ShippingPrice   | float               | Postage and handling costs
+
+Model used when sending a create order request
 
 ## 2.3. Account
 
@@ -421,7 +439,6 @@ Structure can be represented and stored as a comma separated string
 | Type    | [AccountType](#231-accounttype) | The type of the account. Staff, user
 | Email   | string      | E-Mail address identifing the account
 | Hash    | string      | Argon2id hashed password
-| Salt    | string      | Salt for the password hash 
 | Name    | string      | User's first name
 | Surname | string      | User's last name
 
@@ -435,6 +452,26 @@ AccountType is an enum with the following values:
 |-------|-------
 | User  | 1
 | Staff | 2
+
+### 2.3.2. AccountLogin
+
+| Field    | Type   | Description
+|----------|--------|-------------
+| Email    | string | Account E-Mail address 
+| Password | string | Account password
+
+Model used when sending account login request
+
+### 2.3.3. AccountCreate
+
+| Field    | Type   | Description
+|----------|--------|-------------
+| Email    | string | Account E-Mail address 
+| Password | string | Account password
+| Name     | string | Account user name
+| Surname  | string | Account user surname
+
+Model used when sending account register request
 
 ## 2.4. Session
 
