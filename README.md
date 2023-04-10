@@ -28,4 +28,4 @@ The following things could or **should** be implemented for this project to beco
 
 ### Implementations
 
-- [Golang using Gin and Fx](../golang/gin)
+- [Golang using Gin and Fx](https://github.com/MineBartekSA/clean-show/tree/golang/gin)
