@@ -28,26 +28,6 @@ func NewAccountUsecase(repository domain.AccountRepository, order domain.OrderUs
 	}
 }
 
-func (au *accountUsecase) Login(login *domain.AccountLogin) (*domain.Account, string, error) {
-	account, err := au.repository.SelectEMail(login.Email)
-	if err != nil {
-		return nil, "", err
-	}
-
-	verified, err := au.hasher.Verify(login.Password, account.Hash)
-	if err != nil {
-		return nil, "", err
-	} else if !verified {
-		return nil, "", domain.Fatal(domain.ErrUnauthorized, "hash verification failed").Call()
-	}
-
-	session, err := au.session.Create(account.ID)
-	if err != nil {
-		return nil, "", err
-	}
-	return account, session.Token, nil
-}
-
 func (au *accountUsecase) Register(register *domain.AccountCreate) (*domain.Account, string, error) {
 	account := domain.Account{
 		Type:    domain.AccountTypeUser,
@@ -72,6 +52,26 @@ func (au *accountUsecase) Register(register *domain.AccountCreate) (*domain.Acco
 		return nil, "", err
 	}
 	return &account, session.Token, nil
+}
+
+func (au *accountUsecase) Login(login *domain.AccountLogin) (*domain.Account, string, error) {
+	account, err := au.repository.SelectEMail(login.Email)
+	if err != nil {
+		return nil, "", err
+	}
+
+	verified, err := au.hasher.Verify(login.Password, account.Hash)
+	if err != nil {
+		return nil, "", err
+	} else if !verified {
+		return nil, "", domain.Fatal(domain.ErrUnauthorized, "hash verification failed").Call()
+	}
+
+	session, err := au.session.Create(account.ID)
+	if err != nil {
+		return nil, "", err
+	}
+	return account, session.Token, nil
 }
 
 func (au *accountUsecase) FetchBySession(session *domain.Session) (*domain.Account, error) {

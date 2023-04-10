@@ -64,20 +64,20 @@ func ValidatePassword(password string) error {
 //go:generate mockery --name AccountController
 type AccountController interface {
 	Register(router Router)
-	PostLogin(context Context, session UserSession)
 	PostRegister(context Context, session UserSession)
+	PostLogin(context Context, session UserSession)
+	GetLogout(context Context, session UserSession)
 	GetByID(context Context, session UserSession)
 	Patch(context Context, session UserSession)
 	GetOrders(context Context, session UserSession)
 	PostPassword(context Context, session UserSession)
-	GetLogout(context Context, session UserSession)
 	Delete(context Context, session UserSession)
 }
 
 //go:generate mockery --name AccountUsecase
 type AccountUsecase interface {
-	Login(login *AccountLogin) (*Account, string, error)
 	Register(register *AccountCreate) (*Account, string, error)
+	Login(login *AccountLogin) (*Account, string, error)
 	FetchBySession(session *Session) (*Account, error)
 	FetchByID(session UserSession, id uint) (*Account, error)
 	Modify(session UserSession, accountId uint, data map[string]any) (*Account, error)

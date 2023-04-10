@@ -66,6 +66,15 @@ func (ac *accountController) PostLogin(context domain.Context, session domain.Us
 	}{account.ID, token})
 }
 
+func (ac *accountController) GetLogout(context domain.Context, session domain.UserSession) {
+	err := ac.usecase.Logout(session)
+	if err != nil {
+		context.Error(err)
+		return
+	}
+	context.Status(http.StatusNoContent)
+}
+
 func (ac *accountController) GetByID(context domain.Context, session domain.UserSession) {
 	id := uint(0)
 	raw := context.Param("id")
@@ -146,15 +155,6 @@ func (ac *accountController) PostPassword(context domain.Context, session domain
 		return
 	}
 	err = ac.usecase.ModifyPassword(session, uint(id), login.Password)
-	if err != nil {
-		context.Error(err)
-		return
-	}
-	context.Status(http.StatusNoContent)
-}
-
-func (ac *accountController) GetLogout(context domain.Context, session domain.UserSession) {
-	err := ac.usecase.Logout(session)
 	if err != nil {
 		context.Error(err)
 		return
