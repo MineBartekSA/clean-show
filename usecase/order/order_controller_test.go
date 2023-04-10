@@ -85,6 +85,7 @@ func TestPatch(t *testing.T) {
 	usecase := mocks.NewOrderUsecase(t)
 	controller := order.NewOrderController(usecase)
 
+	order := domain.Order{DBModel: domain.DBModel{ID: 10}}
 	session := test.NewUserSession(1)
 	context := &test.MockContext{
 		ParamMap: map[string]string{
@@ -93,11 +94,17 @@ func TestPatch(t *testing.T) {
 		In: map[string]any{},
 	}
 
-	usecase.On("Modify", uint(1), uint(10), context.In).Return(nil)
+	usecase.On("Modify", uint(1), uint(10), context.In).Return(&order, nil)
 
 	controller.Patch(context, session)
 
-	assert.Equal(t, http.StatusNoContent, context.OutStatus)
+	assert.Equal(t, http.StatusOK, context.OutStatus)
+	data := context.Out.(struct {
+		ID uint `json:"id"`
+		*domain.Order
+	})
+	assert.Equal(t, uint(10), data.ID)
+	assert.Equal(t, &order, data.Order)
 }
 
 func TestPostCancel(t *testing.T) {

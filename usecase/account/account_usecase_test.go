@@ -164,7 +164,7 @@ func TestModify(t *testing.T) {
 	repository.On("Update", &account).Return(nil)
 	auditAccount.On("Modification", uint(6), account.ID).Return(nil)
 
-	err := usecase.Modify(&session, 7, map[string]any{
+	acc, err := usecase.Modify(&session, 7, map[string]any{
 		"email": "test@test.com",
 		"name":  "A",
 		"hash":  "hh",
@@ -174,6 +174,7 @@ func TestModify(t *testing.T) {
 	assert.Equal(t, "test@test.com", account.Email)
 	assert.Equal(t, "A", account.Name)
 	assert.Empty(t, account.Hash)
+	assert.Equal(t, &account, acc)
 }
 
 func TestFetchOrders(t *testing.T) {

@@ -129,7 +129,7 @@ func TestModify(t *testing.T) {
 	repository.On("Update", &order).Return(nil)
 	resource.On("Modification", session.GetAccountID(), order.ID).Return(nil)
 
-	err := usecase.Modify(uint(1), 7, map[string]any{
+	ord, err := usecase.Modify(uint(1), 7, map[string]any{
 		"shipping_price": float64(10.5),
 		"total":          float64(1000),
 		"status":         domain.OrderStatusShipped,
@@ -139,6 +139,7 @@ func TestModify(t *testing.T) {
 	assert.Equal(t, domain.OrderStatusShipped, order.Status)
 	assert.Equal(t, float64(10.5), order.ShippingPrice)
 	assert.Equal(t, pre+float64(10.5), order.Total)
+	assert.Equal(t, &order, ord)
 }
 
 func TestCancel(t *testing.T) {

@@ -46,20 +46,20 @@ func (pu *productUsecase) FetchByID(id uint) (*domain.Product, error) {
 	return pu.repository.SelectID(id)
 }
 
-func (pu *productUsecase) Modify(accountId, productId uint, data map[string]any) error {
+func (pu *productUsecase) Modify(accountId, productId uint, data map[string]any) (*domain.Product, error) {
 	product, err := pu.repository.SelectID(productId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = usecase.PatchModel(product, data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = pu.repository.Update(product)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return pu.audit.Modification(accountId, productId)
+	return product, pu.audit.Modification(accountId, productId)
 }
 
 func (pu *productUsecase) Remove(accountId, productId uint) error {

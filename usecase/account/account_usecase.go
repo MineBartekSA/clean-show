@@ -85,29 +85,29 @@ func (au *accountUsecase) FetchByID(session domain.UserSession, id uint) (*domai
 	return au.repository.SelectID(id, false)
 }
 
-func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, data map[string]any) (err error) {
-	account := session.GetAccount()
+func (au *accountUsecase) Modify(session domain.UserSession, accountId uint, data map[string]any) (account *domain.Account, err error) {
+	account = session.GetAccount()
 	if !session.IsStaff() && account.ID != accountId {
-		return domain.Fatal(domain.ErrUnauthorized, "only staff users can modify other accounts information").Call()
+		return nil, domain.Fatal(domain.ErrUnauthorized, "only staff users can modify other accounts information").Call()
 	}
 	if account.ID != accountId {
 		account, err = au.repository.SelectID(accountId, false)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if account.Type == domain.AccountTypeStaff {
-			return domain.Fatal(domain.ErrUnauthorized, "only the owner of this account can change its information").Call()
+			return nil, domain.Fatal(domain.ErrUnauthorized, "only the owner of this account can change its information").Call()
 		}
 	}
 	err = usecase.PatchModel(account, data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = au.repository.Update(account)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return au.audit.Modification(session.GetAccountID(), accountId)
+	return account, au.audit.Modification(session.GetAccountID(), accountId)
 }
 
 func (au *accountUsecase) FetchOrders(session domain.UserSession, accountId uint, limit, page int) ([]domain.Order, error) {

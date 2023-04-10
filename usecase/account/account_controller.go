@@ -105,12 +105,15 @@ func (ac *accountController) Patch(context domain.Context, session domain.UserSe
 		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
-	err = ac.usecase.Modify(session, uint(id), data)
+	account, err := ac.usecase.Modify(session, uint(id), data)
 	if err != nil {
 		context.Error(err)
 		return
 	}
-	context.Status(http.StatusNoContent)
+	context.JSON(http.StatusOK, struct {
+		ID uint `json:"id"`
+		*domain.Account
+	}{account.ID, account})
 }
 
 func (ac *accountController) GetOrders(context domain.Context, session domain.UserSession) {

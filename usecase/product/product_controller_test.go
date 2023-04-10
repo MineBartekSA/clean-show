@@ -86,21 +86,26 @@ func TestPatch(t *testing.T) {
 	usecase := mocks.NewProductUsecase(t)
 	controller := product.NewProductController(usecase)
 
+	product := domain.Product{DBModel: domain.DBModel{ID: 8}}
 	session := test.NewUserSession(1)
 	context := &test.MockContext{
 		ParamMap: map[string]string{
 			"id": "8",
 		},
-		In: map[string]any{
-			"name": "a",
-		},
+		In: map[string]any{},
 	}
 
-	usecase.On("Modify", uint(1), uint(8), context.In).Return(nil)
+	usecase.On("Modify", uint(1), uint(8), context.In).Return(&product, nil)
 
 	controller.Patch(context, session)
 
-	assert.Equal(t, http.StatusNoContent, context.OutStatus)
+	assert.Equal(t, http.StatusOK, context.OutStatus)
+	data := context.Out.(struct {
+		ID uint `json:"id"`
+		*domain.Product
+	})
+	assert.Equal(t, uint(8), data.ID)
+	assert.Equal(t, &product, data.Product)
 }
 
 func TestDeleteController(t *testing.T) {

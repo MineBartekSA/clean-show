@@ -33,7 +33,7 @@ type ProductUsecase interface {
 	Fetch(limit, page int) ([]Product, error)
 	Create(accountId uint, product *Product) error
 	FetchByID(id uint) (*Product, error)
-	Modify(accountId, productId uint, data map[string]any) error
+	Modify(accountId, productId uint, data map[string]any) (*Product, error)
 	Remove(accountId, productId uint) error
 }
 

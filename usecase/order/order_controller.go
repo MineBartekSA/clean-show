@@ -101,12 +101,15 @@ func (oc *orderController) Patch(context domain.Context, session domain.UserSess
 		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
-	err = oc.usecase.Modify(session.GetAccountID(), uint(id), data)
+	order, err := oc.usecase.Modify(session.GetAccountID(), uint(id), data)
 	if err != nil {
 		context.Error(err)
 		return
 	}
-	context.Status(http.StatusNoContent)
+	context.JSON(http.StatusOK, struct {
+		ID uint `json:"id"`
+		*domain.Order
+	}{order.ID, order})
 }
 
 func (oc *orderController) PostCancel(context domain.Context, session domain.UserSession) {

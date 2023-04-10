@@ -80,7 +80,7 @@ type AccountUsecase interface {
 	Register(register *AccountCreate) (*Account, string, error)
 	FetchBySession(session *Session) (*Account, error)
 	FetchByID(session UserSession, id uint) (*Account, error)
-	Modify(session UserSession, accountId uint, data map[string]any) error
+	Modify(session UserSession, accountId uint, data map[string]any) (*Account, error)
 	FetchOrders(session UserSession, accountId uint, limit, page int) ([]Order, error)
 	ModifyPassword(session UserSession, accountId uint, new string) error
 	Logout(session UserSession) error

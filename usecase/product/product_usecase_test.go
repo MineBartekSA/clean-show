@@ -60,10 +60,11 @@ func TestModify(t *testing.T) {
 	repository.On("Update", &product).Return(nil)
 	resource.On("Modification", uint(1), uint(1)).Return(nil)
 
-	err := usecase.Modify(1, 1, map[string]any{"name": "hello"})
+	prod, err := usecase.Modify(1, 1, map[string]any{"name": "hello"})
 
 	assert.NoError(t, err)
 	assert.Equal(t, "hello", product.Name)
+	assert.Equal(t, &product, prod)
 }
 
 func TestRemove(t *testing.T) {

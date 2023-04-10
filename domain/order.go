@@ -110,7 +110,7 @@ type OrderUsecase interface {
 	FetchByAccount(accountId uint, limit, page int) ([]Order, error)
 	Create(accountId uint, create *OrderCreate) (*Order, error)
 	FetchByID(session UserSession, id uint) (*Order, error)
-	Modify(accountId, orderId uint, data map[string]any) error
+	Modify(accountId, orderId uint, data map[string]any) (*Order, error)
 	Cancel(session UserSession, orderId uint) error
 	CancelByAccount(executorId, accountId uint) error
 	Remove(accountId, orderId uint) error

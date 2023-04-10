@@ -102,12 +102,15 @@ func (pc *productController) Patch(context domain.Context, session domain.UserSe
 		context.Error(domain.ErrBadRequest.Wrap(err).Call())
 		return
 	}
-	err = pc.usecase.Modify(session.GetAccountID(), uint(id), data)
+	product, err := pc.usecase.Modify(session.GetAccountID(), uint(id), data)
 	if err != nil {
 		context.Error(err)
 		return
 	}
-	context.Status(http.StatusNoContent)
+	context.JSON(http.StatusOK, struct {
+		ID uint `json:"id"`
+		*domain.Product
+	}{product.ID, product})
 }
 
 func (pc *productController) Delete(context domain.Context, session domain.UserSession) {

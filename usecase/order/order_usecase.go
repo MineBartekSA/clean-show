@@ -70,21 +70,21 @@ func (ou *orderUsecase) FetchByID(session domain.UserSession, id uint) (*domain.
 	return order, nil
 }
 
-func (ou *orderUsecase) Modify(accountId, orderId uint, data map[string]any) error {
+func (ou *orderUsecase) Modify(accountId, orderId uint, data map[string]any) (*domain.Order, error) {
 	order, err := ou.repository.SelectID(orderId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = usecase.PatchModel(order, data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	order.UpdateTotal()
 	err = ou.repository.Update(order)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return ou.audit.Modification(accountId, orderId)
+	return order, ou.audit.Modification(accountId, orderId)
 }
 
 func (ou *orderUsecase) Cancel(session domain.UserSession, orderId uint) error {
